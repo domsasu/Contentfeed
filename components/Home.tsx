@@ -258,7 +258,7 @@ function RecommendedCourseCard({
           aria-label={fullText}
         >
           <span
-            className="material-symbols-rounded shrink-0 text-[var(--cds-color-blue-700)]"
+            className="material-symbols-rounded shrink-0 text-[var(--cds-color-green-700)]"
             aria-hidden
             style={{ fontSize: '16px' }}
           >
@@ -268,7 +268,7 @@ function RecommendedCourseCard({
             <p className="cds-body-tertiary invisible whitespace-pre-wrap break-words" aria-hidden>
               {fullText}
             </p>
-            <p className="cds-body-tertiary text-[var(--cds-color-blue-700)] absolute left-0 top-0 whitespace-pre-wrap break-words">
+            <p className="cds-body-tertiary text-[var(--cds-color-green-700)] absolute left-0 top-0 whitespace-pre-wrap break-words">
               {typed}
             </p>
           </div>
@@ -990,18 +990,18 @@ export const Home: React.FC<HomeProps> = ({
 
         {/* Collection Title */}
         <div>
-          <h2 className="text-xl font-bold text-[var(--cds-color-grey-975)] mb-4">Collection Title</h2>
-          
+          <h2 className="cds-subtitle-lg text-[var(--cds-color-grey-975)] mb-2">Collection Title</h2>
+
           {/* Filter Chips */}
-          <div className="flex gap-2 mb-6">
+          <div className="flex flex-wrap gap-1 mb-4">
             {['Chip 1', 'Chip 2', 'Chip 3'].map((chip, idx) => (
-              <button 
+              <button
                 key={chip}
                 onClick={() => setSelectedChip(`chip${idx + 1}`)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedChip === `chip${idx + 1}` 
-                    ? 'bg-[var(--cds-color-blue-700)] text-[var(--cds-color-white)]' 
-                    : 'bg-[var(--cds-color-white)] border border-[var(--cds-color-grey-100)] text-[var(--cds-color-grey-975)] hover:border-[var(--cds-color-blue-700)]'
+                className={`cds-body-secondary h-8 rounded-[var(--cds-border-radius-400)] px-3 py-1 transition-colors ${
+                  selectedChip === `chip${idx + 1}`
+                    ? 'bg-[var(--cds-color-white)] border border-[var(--cds-color-grey-100)] text-[var(--cds-color-grey-975)]'
+                    : 'bg-[var(--cds-color-white)] border border-[var(--cds-color-grey-100)] text-[var(--cds-color-grey-975)] hover:bg-[var(--cds-color-grey-25)]'
                 }`}
               >
                 {chip}
@@ -1010,48 +1010,53 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* Collection Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="flex gap-4">
             {collectionCourses.map((course) => (
-              <div key={course.id} className="bg-[var(--cds-color-white)] border border-[var(--cds-color-grey-100)] rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
+              <div key={course.id} className="bg-[var(--cds-color-white)] border-2 border-[var(--cds-color-grey-100)] rounded-[var(--cds-border-radius-200)] overflow-hidden hover:shadow-[var(--cds-elevation-level2)] transition-shadow group flex-1 min-w-0 flex flex-col">
                 {/* Course Image */}
-                <div className="relative h-[120px] overflow-hidden">
-                  <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style={{ backgroundImage: `url("${course.image}")` }}></div>
+                <div className="relative h-[171px] overflow-hidden rounded-[var(--cds-border-radius-100)] m-2">
+                  <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105 rounded-[var(--cds-border-radius-100)]" style={{ backgroundImage: `url("${course.image}")` }}></div>
                 </div>
-                
+
                 {/* Course Content */}
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-4 h-4 bg-red-700 rounded flex items-center justify-center">
-                      <span className="text-[8px] font-bold text-[var(--cds-color-white)]">UP</span>
+                <div className="px-3 pb-3 pt-1 flex flex-col flex-1">
+                  {/* Partner */}
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <div className="w-6 h-6 border border-[var(--cds-color-grey-100)] rounded-[var(--cds-border-radius-50)] flex items-center justify-center shrink-0 bg-[var(--cds-color-white)]">
+                      <span className="cds-body-tertiary text-[var(--cds-color-grey-975)] leading-none" style={{ fontSize: '8px' }}>UP</span>
                     </div>
-                    <span className="text-xs text-[var(--cds-color-grey-500)]">{course.provider}</span>
+                    <span className="cds-body-secondary text-[var(--cds-color-grey-600)]">{course.provider}</span>
                   </div>
-                  
-                  <h3 className="font-semibold text-[var(--cds-color-grey-975)] mb-2">{course.title}</h3>
-                  
-                  <p className="text-xs text-[var(--cds-color-grey-500)] mb-3 line-clamp-3">
+
+                  {/* Title */}
+                  <h3 className="cds-subtitle-md text-[var(--cds-color-grey-975)] mb-2">{course.title}</h3>
+
+                  {/* Description */}
+                  <p className="cds-body-secondary text-[var(--cds-color-grey-600)] mb-4 line-clamp-3">
                     {course.description}
                   </p>
-                  
-                  <div className="flex items-center gap-2 text-xs text-[var(--cds-color-grey-600)]">
-                    <span className="flex items-center gap-1">
-                      <Icons.Star className="w-3 h-3 text-[var(--cds-color-yellow-700)] fill-current" />
-                      {course.rating}
-                    </span>
-                    <span>({course.reviews} reviews)</span>
+
+                  <div className="flex-1" />
+
+                  {/* Rating */}
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="material-symbols-rounded text-[var(--cds-color-grey-975)]" style={{ fontSize: '20px', fontVariationSettings: "'FILL' 1" }}>star</span>
+                    <span className="cds-subtitle-md text-[var(--cds-color-grey-975)]">{course.rating}</span>
+                    <span className="cds-body-secondary text-[var(--cds-color-grey-600)] ml-1">{course.reviews} reviews</span>
                   </div>
-                  
-                  <p className="text-xs text-[var(--cds-color-grey-500)] mt-2">
+
+                  {/* Meta */}
+                  <p className="cds-body-secondary text-[var(--cds-color-grey-600)]">
                     {course.level} · Course · {course.duration}
                   </p>
                 </div>
               </div>
             ))}
           </div>
-          
+
           {/* Show more button */}
-          <div className="mt-6">
-            <button className="px-6 py-2 border border-[#0056D2] text-[var(--cds-color-blue-700)] rounded-lg text-sm font-medium hover:bg-[var(--cds-color-blue-25)] transition-colors">
+          <div className="mt-4">
+            <button className="cds-action-secondary px-4 py-2 border border-[var(--cds-color-blue-700)] text-[var(--cds-color-blue-700)] rounded-[var(--cds-border-radius-100)] hover:bg-[var(--cds-color-blue-25)] transition-colors">
               Show more
             </button>
           </div>
