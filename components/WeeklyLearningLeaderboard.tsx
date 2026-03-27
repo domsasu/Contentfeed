@@ -595,7 +595,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       </div>
 
       {/* Around you — 3 rows */}
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <NeighborhoodRows
           activeTab={activeTab}
           userRank={userRank}

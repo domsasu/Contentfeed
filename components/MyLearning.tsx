@@ -256,48 +256,50 @@ function MiniLeaderboardRow({
 }) {
   return (
     <div
-      className={`flex items-center gap-2 rounded-[var(--cds-border-radius-50)] px-2 py-1 ${
-        isUser ? 'bg-[var(--cds-color-blue-50)]' : ''
+      className={`flex h-[38px] min-h-[38px] items-center gap-1.5 ${
+        isUser ? 'rounded-none bg-[#FFF4E8] -mx-4 px-4' : ''
       }`}
     >
-      <span className="w-5 shrink-0 text-center">
+      <span className="w-7 shrink-0 text-center">
         {isMedal ? (
           <img
             src={HONOR_MEDAL_SRC[peer.rank as 1 | 2 | 3]}
             alt=""
-            className="h-4 w-4 inline-block"
+            className="h-6 w-6 inline-block"
             aria-hidden
           />
         ) : (
-          <span className={`cds-body-tertiary tabular-nums ${isUser ? 'text-[var(--cds-color-blue-900)]' : 'text-[var(--cds-color-grey-600)]'}`}>
+          <span className={`tabular-nums text-left ${isUser ? 'cds-action-secondary text-[var(--cds-color-grey-975)]' : 'cds-body-secondary text-[var(--cds-color-grey-600)]'}`}>
             {peer.rank}
           </span>
         )}
       </span>
-      <LetterAvatar letter={peer.letter} seed={peer.name} isLive={peer.isLive} size="compact" />
-      <span className={`cds-body-tertiary min-w-0 flex-1 truncate ${isUser ? 'text-[var(--cds-color-blue-900)]' : 'text-[var(--cds-color-grey-975)]'}`}>
+      <LetterAvatar letter={peer.letter} seed={peer.name} isLive={peer.isLive} size="leaderboard" />
+      <span className={`min-w-0 flex-1 truncate ${isUser ? 'cds-action-secondary text-[var(--cds-color-grey-975)]' : 'cds-body-secondary text-[var(--cds-color-grey-975)]'}`}>
         {peer.name}
       </span>
-      <span className={`cds-body-tertiary shrink-0 tabular-nums ${isUser ? 'text-[var(--cds-color-blue-900)]' : 'text-[var(--cds-color-grey-600)]'}`}>
+      <span className={`shrink-0 tabular-nums ${isUser ? 'cds-action-secondary text-[var(--cds-color-grey-975)]' : 'cds-body-secondary text-[var(--cds-color-grey-600)]'}`}>
         {peer.hours}
       </span>
     </div>
   );
 }
 
-function CohortSelection({
-  selected,
-  onSelect,
+function CohortLeaderboard({
+  selectedCohort,
+  onSelectCohort,
 }: {
-  selected: CohortId;
-  onSelect: (id: CohortId) => void;
+  selectedCohort: CohortId;
+  onSelectCohort: (id: CohortId) => void;
 }) {
+  const board = COHORT_LEADERBOARD[selectedCohort];
+  const activeCohort = COHORTS.find((c) => c.id === selectedCohort);
+
   return (
     <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-4">
+      {/* Header */}
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="cds-subtitle-md text-[var(--cds-color-grey-975)]">
-          Your cohorts
-        </h3>
+        <h3 className="cds-subtitle-md text-[var(--cds-color-grey-975)]">Leaderboard</h3>
         <button
           type="button"
           className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[var(--cds-color-grey-50)] text-[var(--cds-color-grey-600)] hover:text-[var(--cds-color-grey-975)] transition-colors"
@@ -306,99 +308,59 @@ function CohortSelection({
           <span className="material-symbols-rounded" style={{ fontSize: 20 }}>add</span>
         </button>
       </div>
-      <div className="space-y-1.5">
+
+      {/* Cohort chips */}
+      <div className="flex flex-wrap gap-2 mb-2">
         {COHORTS.map((cohort) => {
-          const isActive = cohort.id === selected;
+          const isActive = cohort.id === selectedCohort;
           return (
             <button
               key={cohort.id}
               type="button"
-              onClick={() => onSelect(cohort.id)}
-              className={`flex w-full items-center justify-between rounded-[var(--cds-border-radius-100)] px-3 py-2 text-left transition-colors ${
+              onClick={() => onSelectCohort(cohort.id)}
+              className={`cds-body-tertiary rounded-[var(--cds-border-radius-400)] px-3 py-1.5 transition-colors ${
                 isActive
-                  ? 'bg-[var(--cds-color-blue-50)] border border-[var(--cds-color-blue-300)]'
-                  : 'hover:bg-[var(--cds-color-grey-25)] border border-transparent'
+                  ? 'bg-[var(--cds-color-grey-800)] text-[var(--cds-color-white)]'
+                  : 'bg-[var(--cds-color-white)] border border-[var(--cds-color-grey-100)] text-[var(--cds-color-grey-975)] hover:bg-[var(--cds-color-grey-25)]'
               }`}
             >
-              <span
-                className={`cds-body-secondary ${
-                  isActive ? 'text-[var(--cds-color-blue-900)]' : 'text-[var(--cds-color-grey-975)]'
-                }`}
-              >
-                {cohort.label}
-              </span>
-              <span className="cds-body-tertiary text-[var(--cds-color-grey-600)]">
-                {cohort.members.toLocaleString()} learners
-              </span>
+              {cohort.label} <span className={isActive ? 'text-[var(--cds-color-grey-200)]' : 'text-[var(--cds-color-grey-600)]'}>{cohort.members.toLocaleString()}</span>
             </button>
           );
         })}
       </div>
-    </div>
-  );
-}
 
-function MiniLeaderboard({
-  cohortId,
-  onCohortChange,
-}: {
-  cohortId: CohortId;
-  onCohortChange: (id: CohortId) => void;
-}) {
-  const board = COHORT_LEADERBOARD[cohortId];
+      {/* Spacer */}
+      <div className="mb-3" />
 
-  return (
-    <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="cds-subtitle-md text-[var(--cds-color-grey-975)]">
-          Leaderboard
-        </h3>
-        <select
-          value={cohortId}
-          onChange={(e) => onCohortChange(e.target.value as CohortId)}
-          className="cds-body-tertiary cursor-pointer appearance-none rounded-[var(--cds-border-radius-100)] border border-[var(--cds-color-grey-300)] bg-[var(--cds-color-white)] py-1 pl-2 pr-6 text-[var(--cds-color-grey-700)] hover:border-[var(--cds-color-grey-400)] focus:outline-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%23636363'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 4px center',
-          }}
-        >
-          {COHORTS.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </select>
+      {/* Top 3 */}
+      <div className="space-y-1">
+        {board.top3.map((p) => (
+          <MiniLeaderboardRow
+            key={p.rank}
+            peer={p}
+            isUser={p.rank === board.userRank}
+            isMedal
+          />
+        ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-0">
-        <div>
-          <p className="cds-body-tertiary text-[var(--cds-color-grey-600)] mb-1.5">Top 3</p>
-          <div className="space-y-0.5">
-            {board.top3.map((p) => (
-              <MiniLeaderboardRow
-                key={p.rank}
-                peer={p}
-                isUser={p.rank === board.userRank}
-                isMedal
-              />
-            ))}
-          </div>
-        </div>
+      {/* Separator */}
+      <div className="flex items-center gap-2 my-2">
+        <p className="cds-body-tertiary shrink-0 text-[var(--cds-color-grey-600)]">Around you</p>
+        <div className="flex-1 border-t border-dashed border-[var(--cds-color-grey-200)]" role="separator" />
+      </div>
 
-        <div>
-          <p className="cds-body-tertiary text-[var(--cds-color-grey-600)] mb-1.5">Around you</p>
-          <div className="space-y-0.5">
-            {board.around.map((p) => (
-              <MiniLeaderboardRow
-                key={p.rank}
-                peer={p}
-                isUser={p.rank === board.userRank}
-                isMedal={false}
-              />
-            ))}
-          </div>
-        </div>
+      {/* Around you */}
+      <div className="space-y-1">
+        {board.around.map((p) => (
+          <MiniLeaderboardRow
+            key={p.rank}
+            peer={p}
+            isUser={p.rank === board.userRank}
+            isMedal={false}
+          />
+        ))}
       </div>
     </div>
   );
@@ -686,8 +648,7 @@ export const MyLearning: React.FC<MyLearningProps> = ({
         {/* Right sidebar */}
         <aside className="hidden md:flex w-[400px] shrink-0 flex-col gap-4">
           <LearningPlanCalendar />
-          <CohortSelection selected={selectedCohort} onSelect={setSelectedCohort} />
-          <MiniLeaderboard cohortId={selectedCohort} onCohortChange={setSelectedCohort} />
+          <CohortLeaderboard selectedCohort={selectedCohort} onSelectCohort={setSelectedCohort} />
         </aside>
       </div>
     </div>
