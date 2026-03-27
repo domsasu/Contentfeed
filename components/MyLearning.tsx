@@ -181,15 +181,15 @@ function LearningPlanCalendar() {
 /*  Cohort Selection                                                  */
 /* ------------------------------------------------------------------ */
 
-type CohortId = 'enrolled' | 'ai' | 'careerswitchers';
+export type CohortId = 'enrolled' | 'ai' | 'careerswitchers';
 
-const COHORTS: { id: CohortId; label: string; members: number }[] = [
+export const COHORTS: { id: CohortId; label: string; members: number }[] = [
   { id: 'careerswitchers', label: '#careerswitchers', members: 634 },
   { id: 'enrolled', label: '#coursera', members: 1255 },
   { id: 'ai', label: '#AIpowered', members: 842 },
 ];
 
-interface LeaderboardPeer {
+export interface LeaderboardPeer {
   rank: number;
   letter: string;
   name: string;
@@ -197,7 +197,7 @@ interface LeaderboardPeer {
   isLive?: boolean;
 }
 
-const COHORT_LEADERBOARD: Record<CohortId, { top3: LeaderboardPeer[]; around: LeaderboardPeer[]; userRank: number }> = {
+export const COHORT_LEADERBOARD: Record<CohortId, { top3: LeaderboardPeer[]; around: LeaderboardPeer[]; userRank: number }> = {
   enrolled: {
     top3: [
       { rank: 1, letter: 'M', name: 'Maria Montessori', hours: '16h', isLive: true },
@@ -239,13 +239,13 @@ const COHORT_LEADERBOARD: Record<CohortId, { top3: LeaderboardPeer[]; around: Le
   },
 };
 
-const HONOR_MEDAL_SRC: Record<1 | 2 | 3, string> = {
+export const HONOR_MEDAL_SRC: Record<1 | 2 | 3, string> = {
   1: '/1%20honor.svg',
   2: '/2%20honor.svg',
   3: '/3%20honor.svg',
 };
 
-function MiniLeaderboardRow({
+export function MiniLeaderboardRow({
   peer,
   isUser,
   isMedal,
@@ -257,10 +257,10 @@ function MiniLeaderboardRow({
   return (
     <div
       className={`flex h-[38px] min-h-[38px] items-center gap-1.5 ${
-        isUser ? 'rounded-none bg-[#FFF4E8] -mx-4 px-4' : ''
+        isUser ? 'rounded-none bg-[#FFF4E8] -mx-5 px-5' : ''
       }`}
     >
-      <span className="w-7 shrink-0 text-center">
+      <span className="w-7 shrink-0 text-left">
         {isMedal ? (
           <img
             src={HONOR_MEDAL_SRC[peer.rank as 1 | 2 | 3]}

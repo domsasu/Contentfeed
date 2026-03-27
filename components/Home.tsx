@@ -3,8 +3,15 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import {
   COHORT_LIVE_LEARNERS_COUNT,
-  LeaderboardWidget,
 } from './WeeklyLearningLeaderboard';
+import {
+  CohortId,
+  COHORTS,
+  COHORT_LEADERBOARD,
+  HONOR_MEDAL_SRC,
+  MiniLeaderboardRow,
+} from './MyLearning';
+import { LetterAvatar } from './WeeklyLearningLeaderboard';
 import { CourseData, Status, ContentType } from '../types';
 import { PlanType } from './PersonalizeLearningModal';
 import {
@@ -368,6 +375,75 @@ const collectionCourses = [
   }
 ];
 
+function HomeLeaderboard({
+  selectedCohort,
+  onSelectCohort,
+}: {
+  selectedCohort: CohortId;
+  onSelectCohort: (id: CohortId) => void;
+}) {
+  const board = COHORT_LEADERBOARD[selectedCohort];
+  const activeCohort = COHORTS.find((c) => c.id === selectedCohort);
+
+  return (
+    <div>
+      {/* Headline row: Leaderboard + chips + add button */}
+      <div className="mb-3 flex items-center gap-3 flex-wrap">
+        <h2 className="cds-subtitle-lg text-[var(--cds-color-grey-975)]">Leaderboard</h2>
+        <div className="flex flex-wrap gap-2">
+          {COHORTS.map((cohort) => {
+            const isActive = cohort.id === selectedCohort;
+            return (
+              <button
+                key={cohort.id}
+                type="button"
+                onClick={() => onSelectCohort(cohort.id)}
+                className={`cds-body-secondary h-8 rounded-[var(--cds-border-radius-400)] px-3 py-1 transition-colors ${
+                  isActive
+                    ? 'bg-[var(--cds-color-grey-800)] text-[var(--cds-color-white)]'
+                    : 'bg-[var(--cds-color-white)] border border-[var(--cds-color-grey-100)] text-[var(--cds-color-grey-975)] hover:bg-[var(--cds-color-grey-25)]'
+                }`}
+              >
+                {cohort.label} <span className={isActive ? 'text-[var(--cds-color-grey-200)]' : 'text-[var(--cds-color-grey-600)]'}>{cohort.members.toLocaleString()}</span>
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[var(--cds-color-grey-50)] text-[var(--cds-color-grey-600)] hover:text-[var(--cds-color-grey-975)] transition-colors ml-auto"
+          aria-label="Join a cohort"
+        >
+          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>add</span>
+        </button>
+      </div>
+
+      {/* Two cards side by side */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Top 3 card */}
+        <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-5">
+          <p className="cds-body-tertiary text-[var(--cds-color-grey-600)] mb-1.5">Top 3</p>
+          <div className="space-y-1">
+            {board.top3.map((p) => (
+              <MiniLeaderboardRow key={p.rank} peer={p} isUser={p.rank === board.userRank} isMedal />
+            ))}
+          </div>
+        </div>
+
+        {/* Around you card */}
+        <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-5">
+          <p className="cds-body-tertiary text-[var(--cds-color-grey-600)] mb-1.5">Around you</p>
+          <div className="space-y-1">
+            {board.around.map((p) => (
+              <MiniLeaderboardRow key={p.rank} peer={p} isUser={p.rank === board.userRank} isMedal={false} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const Home: React.FC<HomeProps> = ({ 
     onResume, 
     currentSP, 
@@ -388,7 +464,8 @@ export const Home: React.FC<HomeProps> = ({
   const streakHoursCompletedToday = 0;
 
   const [selectedChip, setSelectedChip] = useState('chip1');
-  
+  const [selectedCohort, setSelectedCohort] = useState<CohortId>('careerswitchers');
+
   // Intro video: muted by default, end state for "Continue watching"
   const [introVideoMuted, setIntroVideoMuted] = useState(true);
   const [introVideoEnded, setIntroVideoEnded] = useState(false);
@@ -831,9 +908,6 @@ export const Home: React.FC<HomeProps> = ({
                 </p>
               </div>
 
-              {/* Leaderboard mini widget */}
-              <LeaderboardWidget learnerDisplayName="Priya" onNavigateToMyLearning={onNavigateToDashboard} />
-
             </div>
 
           </div>
@@ -844,7 +918,10 @@ export const Home: React.FC<HomeProps> = ({
 
       {/* White Content Area */}
       <div className="max-w-[1440px] mx-auto px-6 py-10 space-y-12">
-        
+
+        {/* Expanded Leaderboard */}
+        <HomeLeaderboard selectedCohort={selectedCohort} onSelectCohort={setSelectedCohort} />
+
         {/* Course Recommendations - loads in after top section */}
         <div className="animate-widget-slide-up-content">
           <div className="flex items-center gap-2 mb-4">
