@@ -233,7 +233,7 @@ export const COHORT_LEADERBOARD: Record<CohortId, { top3: LeaderboardPeer[]; aro
     around: [
       { rank: 17, letter: 'V', name: 'Vik Desai', hours: '7h' },
       { rank: 18, letter: 'P', name: 'Priya', hours: '6.5h' },
-      { rank: 19, letter: 'Z', name: 'Zoe Martin', hours: '6h' },
+      { rank: 19, letter: 'Z', name: 'Zoe Martin', hours: '6h', isLive: true },
     ],
     userRank: 18,
   },
@@ -274,7 +274,12 @@ export function MiniLeaderboardRow({
           </span>
         )}
       </span>
-      <LetterAvatar letter={peer.letter} seed={peer.name} isLive={peer.isLive} size="leaderboard" />
+      <LetterAvatar
+        letter={peer.letter}
+        seed={peer.name}
+        isLive={isUser || !!peer.isLive}
+        size="leaderboard"
+      />
       <span className={`min-w-0 flex-1 truncate ${isUser ? 'cds-action-secondary text-[var(--cds-color-grey-975)]' : 'cds-body-secondary text-[var(--cds-color-grey-975)]'}`}>
         {peer.name}
       </span>
