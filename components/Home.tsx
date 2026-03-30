@@ -8,7 +8,6 @@ import {
   CohortId,
   COHORTS,
   COHORT_LEADERBOARD,
-  HONOR_MEDAL_SRC,
   MiniLeaderboardRow,
 } from './MyLearning';
 import { LetterAvatar } from './WeeklyLearningLeaderboard';
@@ -383,13 +382,13 @@ function HomeLeaderboard({
   onSelectCohort: (id: CohortId) => void;
 }) {
   const board = COHORT_LEADERBOARD[selectedCohort];
-  const activeCohort = COHORTS.find((c) => c.id === selectedCohort);
 
-  return (
-    <div>
-      {/* Headline row: Leaderboard + chips + add button */}
+  const fullLeaderboardPanel = (
+    <>
       <div className="mb-3 flex items-center gap-3 flex-wrap">
-        <h2 className="cds-subtitle-lg text-[var(--cds-color-grey-975)]">Leaderboard</h2>
+        <h2 className="cds-subtitle-lg text-[var(--cds-color-grey-975)]">
+          Leaderboard
+        </h2>
         <div className="flex flex-wrap gap-2">
           {COHORTS.map((cohort) => {
             const isActive = cohort.id === selectedCohort;
@@ -404,7 +403,10 @@ function HomeLeaderboard({
                     : 'bg-[var(--cds-color-white)] border border-[var(--cds-color-grey-100)] text-[var(--cds-color-grey-975)] hover:bg-[var(--cds-color-grey-25)]'
                 }`}
               >
-                {cohort.label} <span className={isActive ? 'text-[var(--cds-color-grey-200)]' : 'text-[var(--cds-color-grey-600)]'}>{cohort.members.toLocaleString()}</span>
+                {cohort.label}{' '}
+                <span className={isActive ? 'text-[var(--cds-color-grey-200)]' : 'text-[var(--cds-color-grey-600)]'}>
+                  {cohort.members.toLocaleString()}
+                </span>
               </button>
             );
           })}
@@ -418,9 +420,7 @@ function HomeLeaderboard({
         </button>
       </div>
 
-      {/* Two cards side by side */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Top 3 card */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-5">
           <p className="cds-body-tertiary text-[var(--cds-color-grey-600)] mb-1.5">Top 3</p>
           <div className="space-y-1">
@@ -430,7 +430,6 @@ function HomeLeaderboard({
           </div>
         </div>
 
-        {/* Around you card */}
         <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-5">
           <p className="cds-body-tertiary text-[var(--cds-color-grey-600)] mb-1.5">Around you</p>
           <div className="space-y-1">
@@ -440,6 +439,12 @@ function HomeLeaderboard({
           </div>
         </div>
       </div>
+    </>
+  );
+
+  return (
+    <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-4 sm:p-5">
+      {fullLeaderboardPanel}
     </div>
   );
 }
@@ -919,7 +924,7 @@ export const Home: React.FC<HomeProps> = ({
       {/* White Content Area */}
       <div className="max-w-[1440px] mx-auto px-6 py-10 space-y-12">
 
-        {/* Expanded Leaderboard */}
+        {/* Leaderboard: collapsed strip + full view in drawer */}
         <HomeLeaderboard selectedCohort={selectedCohort} onSelectCohort={setSelectedCohort} />
 
         {/* Course Recommendations - loads in after top section */}

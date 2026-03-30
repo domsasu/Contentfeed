@@ -183,10 +183,25 @@ function LearningPlanCalendar() {
 
 export type CohortId = 'enrolled' | 'ai' | 'careerswitchers';
 
-export const COHORTS: { id: CohortId; label: string; members: number }[] = [
-  { id: 'careerswitchers', label: '#careerswitchers', members: 634 },
-  { id: 'enrolled', label: '#coursera', members: 1255 },
-  { id: 'ai', label: '#AIpowered', members: 842 },
+export const COHORTS: { id: CohortId; label: string; members: number; summary: string }[] = [
+  {
+    id: 'careerswitchers',
+    label: '#careerswitchers',
+    members: 634,
+    summary: 'Peers building skills for a new role. Share progress and learn from others making a career change.',
+  },
+  {
+    id: 'enrolled',
+    label: '#coursera',
+    members: 1255,
+    summary: 'The broader Coursera learner community. Track how your cohort engages with courses over time.',
+  },
+  {
+    id: 'ai',
+    label: '#AIpowered',
+    members: 842,
+    summary: 'Focused on AI, ML, and data. Compare study habits and stay motivated with learners on a similar path.',
+  },
 ];
 
 export interface LeaderboardPeer {
@@ -297,14 +312,13 @@ function CohortLeaderboard({
   selectedCohort: CohortId;
   onSelectCohort: (id: CohortId) => void;
 }) {
-  const board = COHORT_LEADERBOARD[selectedCohort];
   const activeCohort = COHORTS.find((c) => c.id === selectedCohort);
 
   return (
     <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-4">
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="cds-subtitle-md text-[var(--cds-color-grey-975)]">Leaderboard</h3>
+        <h3 className="cds-subtitle-md text-[var(--cds-color-grey-975)]">Cohorts</h3>
         <button
           type="button"
           className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[var(--cds-color-grey-50)] text-[var(--cds-color-grey-600)] hover:text-[var(--cds-color-grey-975)] transition-colors"
@@ -315,7 +329,7 @@ function CohortLeaderboard({
       </div>
 
       {/* Cohort chips */}
-      <div className="flex flex-wrap gap-2 mb-2">
+      <div className="flex flex-wrap gap-2">
         {COHORTS.map((cohort) => {
           const isActive = cohort.id === selectedCohort;
           return (
@@ -329,44 +343,26 @@ function CohortLeaderboard({
                   : 'bg-[var(--cds-color-white)] border border-[var(--cds-color-grey-100)] text-[var(--cds-color-grey-975)] hover:bg-[var(--cds-color-grey-25)]'
               }`}
             >
-              {cohort.label} <span className={isActive ? 'text-[var(--cds-color-grey-200)]' : 'text-[var(--cds-color-grey-600)]'}>{cohort.members.toLocaleString()}</span>
+              {cohort.label}{' '}
+              <span className={isActive ? 'text-[var(--cds-color-grey-200)]' : 'text-[var(--cds-color-grey-600)]'}>
+                {cohort.members.toLocaleString()}
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* Spacer */}
-      <div className="mb-3" />
-
-      {/* Top 3 */}
-      <div className="space-y-1">
-        {board.top3.map((p) => (
-          <MiniLeaderboardRow
-            key={p.rank}
-            peer={p}
-            isUser={p.rank === board.userRank}
-            isMedal
-          />
-        ))}
-      </div>
-
-      {/* Separator */}
-      <div className="flex items-center gap-2 my-2">
-        <p className="cds-body-tertiary shrink-0 text-[var(--cds-color-grey-600)]">Around you</p>
-        <div className="flex-1 border-t border-dashed border-[var(--cds-color-grey-200)]" role="separator" />
-      </div>
-
-      {/* Around you */}
-      <div className="space-y-1">
-        {board.around.map((p) => (
-          <MiniLeaderboardRow
-            key={p.rank}
-            peer={p}
-            isUser={p.rank === board.userRank}
-            isMedal={false}
-          />
-        ))}
-      </div>
+      {activeCohort && (
+        <div className="mt-4 pt-4 border-t border-[var(--cds-color-grey-100)]">
+          <p className="cds-action-secondary text-[var(--cds-color-grey-975)]">{activeCohort.label}</p>
+          <p className="cds-body-secondary text-[var(--cds-color-grey-600)] mt-1">
+            {activeCohort.members.toLocaleString()} members
+          </p>
+          <p className="cds-body-secondary text-[var(--cds-color-grey-700)] mt-3 leading-snug">
+            {activeCohort.summary}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
