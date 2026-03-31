@@ -1,22 +1,24 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSiteVariant } from '../context/SiteVariantContext';
 import {
   JOINABLE_FEED_COHORT_IDS,
   JOINED_FEED_COHORT_IDS,
   courseraDisciplineLabelForSlug,
+  getAllStreamFeedPlaceholderItems,
   getFeedPlaceholderItems,
   type FeedCohortId,
+  type FeedPlaceholderItem,
 } from '../constants/feedCohorts';
 import { FeedCohortPills } from './feed/FeedCohortPills';
 import { FeedDiscoverRail } from './feed/FeedDiscoverRail';
 import { FeedTimeline } from './feed/FeedTimeline';
 import { Icons } from './Icons';
+import { enrichFeedVideoThumbnails } from '../services/unsplashThumbnails';
 
 export const FeedPage: React.FC = () => {
   const { variant, surface } = useSiteVariant();
-  const [activeJoinedCohortId, setActiveJoinedCohortId] = useState<FeedCohortId>(
-    JOINED_FEED_COHORT_IDS[0] ?? 'careerswitchers'
-  );
+  /** `null` = All snacks stream (mixed cohorts). */
+  const [selectedCohortId, setSelectedCohortId] = useState<FeedCohortId | null>(null);
   /** Optional career-area lens; default is cohort-only feed (no pill selected). */
   const [activeDisciplineSlug, setActiveDisciplineSlug] = useState<string | null>(null);
   /** Cohorts the user joined via the rail CTA (moved from discover into “yours”). */
@@ -31,6 +33,11 @@ export const FeedPage: React.FC = () => {
     [joinedViaRailIds]
   );
 
+  const allStreamCohortIds = useMemo(
+    () => [...railJoinedIds, ...railJoinableIds],
+    [railJoinedIds, railJoinableIds]
+  );
+
   const activeDisciplineLabel = useMemo(
     () =>
       activeDisciplineSlug ? courseraDisciplineLabelForSlug(activeDisciplineSlug) : undefined,
@@ -39,12 +46,32 @@ export const FeedPage: React.FC = () => {
 
   const feedItems = useMemo(
     () =>
-      getFeedPlaceholderItems(activeJoinedCohortId, {
-        disciplineLabel: activeDisciplineLabel,
-        disciplineSlug: activeDisciplineSlug,
-      }),
-    [activeJoinedCohortId, activeDisciplineLabel, activeDisciplineSlug]
+      selectedCohortId === null
+        ? getAllStreamFeedPlaceholderItems(allStreamCohortIds, {
+            disciplineLabel: activeDisciplineLabel,
+            disciplineSlug: activeDisciplineSlug,
+          })
+        : getFeedPlaceholderItems(selectedCohortId, {
+            disciplineLabel: activeDisciplineLabel,
+            disciplineSlug: activeDisciplineSlug,
+          }),
+    [selectedCohortId, allStreamCohortIds, activeDisciplineLabel, activeDisciplineSlug]
   );
+
+  const [feedItemsWithThumbs, setFeedItemsWithThumbs] = useState<FeedPlaceholderItem[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setFeedItemsWithThumbs(null);
+    enrichFeedVideoThumbnails(feedItems).then((enriched) => {
+      if (!cancelled) setFeedItemsWithThumbs(enriched);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [feedItems]);
+
+  const timelineItems = feedItemsWithThumbs ?? feedItems;
 
   return (
     <div className="flex-1 bg-[var(--cds-color-grey-25)] overflow-y-auto custom-scrollbar">
@@ -68,7 +95,10 @@ export const FeedPage: React.FC = () => {
               <FeedCohortPills
                 variant="coursera"
                 activeSlug={activeDisciplineSlug}
-                onSelectSlug={setActiveDisciplineSlug}
+                onSelectSlug={(slug) => {
+                  setActiveDisciplineSlug(slug);
+                  if (slug === null) setSelectedCohortId(null);
+                }}
               />
               <button
                 type="button"
@@ -83,20 +113,20 @@ export const FeedPage: React.FC = () => {
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-x-6 lg:gap-y-4">
             <div className="order-1 min-w-0 lg:col-span-9">
               <FeedTimeline
-                key={`${activeJoinedCohortId}-${activeDisciplineSlug ?? ''}`}
-                cohortId={activeJoinedCohortId}
-                items={feedItems}
+                key={`${selectedCohortId ?? 'all'}-${activeDisciplineSlug ?? ''}`}
+                cohortId={selectedCohortId ?? 'all'}
+                items={timelineItems}
               />
             </div>
             <div className="order-2 min-w-0 lg:col-span-3">
               <FeedDiscoverRail
-                activeCohortId={activeJoinedCohortId}
-                onSelectCohort={setActiveJoinedCohortId}
+                activeCohortId={selectedCohortId}
+                onSelectCohort={setSelectedCohortId}
                 joinedCohortIds={railJoinedIds}
                 joinableCohortIds={railJoinableIds}
                 onJoinCohort={(id) => {
                   setJoinedViaRailIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-                  setActiveJoinedCohortId(id);
+                  setSelectedCohortId(id);
                 }}
               />
             </div>

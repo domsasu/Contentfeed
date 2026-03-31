@@ -41,7 +41,8 @@ function formatEngagementCount(n: number): string {
 }
 
 export const FeedMediaCard: React.FC<FeedMediaCardProps> = ({ item }) => {
-  const { type, title, subtitle, meta } = item;
+  const { type, title, subtitle, meta, thumbnailUrl, thumbnailAttribution, thumbnailAttributionUrl } =
+    item;
   const { cheer, share } = useMemo(() => engagementMetrics(type, title), [type, title]);
   const [cheered, setCheered] = useState(false);
   const [cheerBurstKey, setCheerBurstKey] = useState(0);
@@ -59,14 +60,40 @@ export const FeedMediaCard: React.FC<FeedMediaCardProps> = ({ item }) => {
 
       {type === 'video' && (
         <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-lg bg-[var(--cds-color-grey-100)]">
-          <div className="absolute inset-0 flex items-center justify-center bg-[var(--cds-color-grey-200)]/80">
+          {thumbnailUrl ? (
+            <img
+              src={thumbnailUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : null}
+          <div
+            className={`absolute inset-0 flex items-center justify-center ${
+              thumbnailUrl ? 'bg-[var(--cds-color-grey-975)]/40' : 'bg-[var(--cds-color-grey-200)]/80'
+            }`}
+          >
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--cds-color-grey-975)] text-[var(--cds-color-white)] shadow-md">
               <Icons.Play className="h-7 w-7 translate-x-0.5" />
             </div>
           </div>
-          <p className="absolute bottom-2 left-2 right-2 cds-body-tertiary text-xs text-[var(--cds-color-grey-700)]">
-            Placeholder video thumbnail · cohort course clip
-          </p>
+          {thumbnailAttribution && thumbnailAttributionUrl ? (
+            <div className="pointer-events-auto absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 pb-2 pt-10">
+              <a
+                href={thumbnailAttributionUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cds-body-tertiary block text-[11px] leading-snug text-white drop-shadow-sm hover:underline"
+              >
+                {thumbnailAttribution}
+              </a>
+            </div>
+          ) : (
+            <p className="absolute bottom-2 left-2 right-2 cds-body-tertiary text-xs text-[var(--cds-color-grey-700)]">
+              Placeholder video thumbnail · cohort course clip
+            </p>
+          )}
         </div>
       )}
 

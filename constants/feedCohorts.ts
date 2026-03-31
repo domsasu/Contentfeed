@@ -174,6 +174,12 @@ export interface FeedPlaceholderItem {
   title: string;
   subtitle: string;
   meta: string;
+  /** Unsplash (or other) thumbnail for video rows — filled client-side when API key is set. */
+  thumbnailUrl?: string;
+  /** E.g. "Photo by Name on Unsplash" — show near thumbnail per Unsplash guidelines. */
+  thumbnailAttribution?: string;
+  /** Photographer / photo page on Unsplash. */
+  thumbnailAttributionUrl?: string;
 }
 
 const cohortFeedCopy: Record<FeedCohortId, { theme: string; courseHint: string }> = {
@@ -361,7 +367,7 @@ function itemFromTemplate(
 
 /** Per-cohort media order so each cohort feels like a distinct feed (same six templates, different rhythm). */
 const FEED_MEDIA_ORDER_BY_COHORT: Record<FeedCohortId, FeedMediaTemplateKey[]> = {
-  careerswitchers: ['p1', 'v1', 'a2', 'v2', 'a1', 'p2'],
+  careerswitchers: ['a1', 'v1', 'p1', 'a2', 'v2', 'p2'],
   enrolled: ['a1', 'v2', 'p1', 'p2', 'v1', 'a2'],
   ai: ['v1', 'p2', 'a1', 'v2', 'p1', 'a2'],
   design: ['a2', 'p1', 'v1', 'a1', 'p2', 'v2'],
@@ -435,4 +441,28 @@ export function getFeedPlaceholderItems(
   options?: GetFeedPlaceholderItemsOptions
 ): FeedPlaceholderItem[] {
   return itemsForCohort(cohortId, options?.disciplineLabel, options?.disciplineSlug ?? null);
+}
+
+/** Interleaved items from each cohort for the Snacks “all” stream (one card per cohort per round). */
+export function getAllStreamFeedPlaceholderItems(
+  cohortIds: FeedCohortId[],
+  options?: GetFeedPlaceholderItemsOptions
+): FeedPlaceholderItem[] {
+  if (cohortIds.length === 0) return [];
+  const perCohort = cohortIds.map((id) => getFeedPlaceholderItems(id, options));
+  const maxLen = Math.max(...perCohort.map((c) => c.length), 0);
+  const out: FeedPlaceholderItem[] = [];
+  for (let i = 0; i < maxLen; i++) {
+    for (let j = 0; j < perCohort.length; j++) {
+      const row = perCohort[j];
+      const item = row[i];
+      if (item) out.push(item);
+    }
+  }
+  const firstPodcastIdx = out.findIndex((item) => item.type === 'podcast');
+  if (firstPodcastIdx > 0) {
+    const [podcastLead] = out.splice(firstPodcastIdx, 1);
+    out.unshift(podcastLead);
+  }
+  return out;
 }

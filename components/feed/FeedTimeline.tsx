@@ -3,7 +3,7 @@ import type { FeedCohortId, FeedPlaceholderItem } from '../../constants/feedCoho
 import { FeedMediaCard } from './FeedMediaCard';
 
 interface FeedTimelineProps {
-  cohortId: FeedCohortId;
+  cohortId: FeedCohortId | 'all';
   items: FeedPlaceholderItem[];
 }
 

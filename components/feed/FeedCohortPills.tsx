@@ -6,6 +6,7 @@ import {
   Globe,
   Grid3x3,
   Laptop,
+  LayoutGrid,
   Paintbrush,
   Rocket,
   ShieldPlus,
@@ -75,13 +76,26 @@ export const FeedCohortPills: React.FC<FeedCohortPillsProps> = ({
     >
       <div
         role="tablist"
-        aria-label="Coursera discipline filters"
+        aria-label="Feed scope and Coursera discipline filters"
         className={
           isCoursera
             ? 'flex w-full min-w-0 flex-wrap items-center gap-2 py-0.5'
             : `flex w-max max-w-none flex-nowrap items-center ${compact ? 'gap-1' : 'gap-1.5 py-1'} py-0.5`
         }
       >
+        {isCoursera ? (
+          <button
+            key="__all_disciplines__"
+            type="button"
+            role="tab"
+            aria-selected={activeSlug === null}
+            className={courseraPillClasses(activeSlug === null)}
+            onClick={() => onSelectSlug(null)}
+          >
+            <LayoutGrid className="h-4 w-4 shrink-0 stroke-[1.75] text-current opacity-90" aria-hidden />
+            <span>All</span>
+          </button>
+        ) : null}
         {COURSERA_BROWSE_DISCIPLINES.map(({ slug, label }) => {
           const Icon = DISCIPLINE_ICON_BY_SLUG[slug] ?? Globe;
           const selected = activeSlug === slug;

@@ -34,8 +34,9 @@ function MemberCountAndActivity({
 }
 
 interface FeedDiscoverRailProps {
-  activeCohortId: FeedCohortId;
-  onSelectCohort: (id: FeedCohortId) => void;
+  /** `null` = show the mixed “all snacks” stream. */
+  activeCohortId: FeedCohortId | null;
+  onSelectCohort: (id: FeedCohortId | null) => void;
   /** Called when the user joins a cohort from the discover list (not yet a member). */
   onJoinCohort: (id: FeedCohortId) => void;
   /** Override default joined cohort order (e.g. after user joins from discover). */
@@ -57,7 +58,7 @@ export const FeedDiscoverRail: React.FC<FeedDiscoverRailProps> = ({
     <ul className="space-y-3">
       {joinedCohortIds.map((id) => {
         const c = FEED_COHORT_META[id];
-        const isActive = activeCohortId === id;
+        const isActive = activeCohortId !== null && activeCohortId === id;
         return (
           <li key={id}>
             <button
@@ -98,7 +99,7 @@ export const FeedDiscoverRail: React.FC<FeedDiscoverRailProps> = ({
       ) : null}
       {joinableCohortIds.map((id) => {
         const c = FEED_COHORT_META[id];
-        const isActive = activeCohortId === id;
+        const isActive = activeCohortId !== null && activeCohortId === id;
         return (
           <li key={id}>
             <div

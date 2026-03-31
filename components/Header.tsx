@@ -281,7 +281,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setLearnNavOpen(false);
                 }}
               >
-                Profile
+                Backpack
                 <Icons.ChevronDown
                   className={`w-4 h-4 transition-transform ${learnNavOpen ? 'rotate-180' : ''}`}
                 />
@@ -296,9 +296,9 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   {(
                     [
-                      { view: 'home' as const, label: 'My Home' },
-                      { view: 'dashboard' as const, label: 'My Learning' },
-                      { view: 'feed' as const, label: 'My Feed' },
+                      { view: 'home' as const, label: 'Work' },
+                      { view: 'dashboard' as const, label: 'Supplies' },
+                      { view: 'feed' as const, label: 'Snacks' },
                     ] as const
                   ).map((item) => (
                     <button
@@ -577,7 +577,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setUserMenuOpen(false);
                     }}
                   >
-                    My Learning
+                    Supplies
                   </button>
                 </div>
               ) : null}
