@@ -443,7 +443,7 @@ function HomeLeaderboard({
   );
 
   return (
-    <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-4 sm:p-5">
+    <div className="rounded-[var(--cds-border-radius-200)] bg-[var(--cds-color-white)] p-4 sm:p-5">
       {fullLeaderboardPanel}
     </div>
   );
