@@ -164,6 +164,11 @@ export const JOINED_FEED_COHORT_IDS: FeedCohortId[] = (
   Object.keys(FEED_COHORT_META) as FeedCohortId[]
 ).filter((id) => FEED_COHORT_META[id].joinedByDefault);
 
+/** True when any joined cohort has a live activity signal (`activityPill` in meta, e.g. “New activity”). */
+export function joinedFeedCohortsHaveNewActivity(): boolean {
+  return JOINED_FEED_COHORT_IDS.some((id) => Boolean(FEED_COHORT_META[id].activityPill));
+}
+
 /** Generic / discover cohort pills (may overlap conceptually with joinable). */
 export const DISCOVER_FEED_COHORT_IDS: FeedCohortId[] = (
   Object.keys(FEED_COHORT_META) as FeedCohortId[]

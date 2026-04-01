@@ -742,6 +742,12 @@ const App: React.FC = () => {
         showPartnerLogo={currentView !== 'dashboard' && currentView !== 'home' && currentView !== 'feed' && currentView !== 'assessment' && !isAssessmentResultView}
         onLogoClick={navigateToHome}
         isHomeView={currentView === 'home' || currentView === 'dashboard' || currentView === 'feed'}
+        showPrimaryNavLinks={
+          currentView === 'home' ||
+          currentView === 'dashboard' ||
+          currentView === 'feed' ||
+          currentView === 'learning'
+        }
         onNavigate={(view) => setCurrentView(view)}
         careerTitle={currentView === 'home' || currentView === 'dashboard' || currentView === 'feed' ? 'Data Analyst' : undefined}
         primaryNavView={
@@ -765,6 +771,7 @@ const App: React.FC = () => {
             dailyGoalCompletions={dailyGoalCompletions}
             assessmentResults={assessmentResults}
             onNavigateToDashboard={navigateToDashboard}
+            onNavigateToFeed={navigateToFeed}
             onTakeSkillAssessment={navigateToAssessment}
             dailyTimeGoal={dailyTimeGoal}
             introModalClosed={true}

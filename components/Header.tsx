@@ -3,6 +3,10 @@ import { Icons } from './Icons';
 import { RollingCounter } from './RollingCounter';
 import { useSiteVariant } from '../context/SiteVariantContext';
 import { SITE_VARIANT_OPTIONS } from '../config/siteVariants';
+import { joinedFeedCohortsHaveNewActivity } from '../constants/feedCohorts';
+
+/** Views the header can navigate to via primary nav or user menu shortcuts. */
+export type HeaderNavigateTarget = 'home' | 'dashboard' | 'feed';
 
 interface HeaderProps {
   currentSP: number;
@@ -15,9 +19,11 @@ interface HeaderProps {
   showPartnerLogo?: boolean;
   onLogoClick?: () => void;
   isHomeView?: boolean;
-  onNavigate?: (view: any) => void;
+  /** When true, show Explore + My Learning + Feed in the desktop header (e.g. home, dashboard, feed, learning). */
+  showPrimaryNavLinks?: boolean;
+  onNavigate?: (view: HeaderNavigateTarget) => void;
   careerTitle?: string;
-  /** Which primary surface is active when the home-style header nav is shown (home / dashboard / feed). */
+  /** Which primary surface is active for nav emphasis (My Learning / Feed); use `home` when neither applies. */
   primaryNavView?: 'home' | 'dashboard' | 'feed';
 }
 
@@ -32,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   showPartnerLogo = true,
   onLogoClick,
   isHomeView = false,
+  showPrimaryNavLinks = false,
   onNavigate,
   careerTitle,
   primaryNavView = 'home',
@@ -39,8 +46,6 @@ export const Header: React.FC<HeaderProps> = ({
   const { variant, setVariant } = useSiteVariant();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const [learnNavOpen, setLearnNavOpen] = useState(false);
-  const learnNavRef = useRef<HTMLDivElement>(null);
 
   const [animate, setAnimate] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -57,6 +62,11 @@ export const Header: React.FC<HeaderProps> = ({
 
   // Check if user has exceeded the goal
   const isOverAchieving = currentSP > dailyGoalSP;
+
+  const showFeedNewActivityDot =
+    showPrimaryNavLinks &&
+    primaryNavView !== 'feed' &&
+    joinedFeedCohortsHaveNewActivity();
 
   useEffect(() => {
     // Only run logic if SP has increased (progress made)
@@ -185,42 +195,6 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('keydown', onKey);
   }, [userMenuOpen]);
 
-  useEffect(() => {
-    if (!learnNavOpen) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (learnNavRef.current && !learnNavRef.current.contains(e.target as Node)) {
-        setLearnNavOpen(false);
-      }
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [learnNavOpen]);
-
-  useEffect(() => {
-    if (!learnNavOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setLearnNavOpen(false);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [learnNavOpen]);
-
-  useEffect(() => {
-    if (!learnNavOpen) return;
-    const el = learnNavRef.current;
-    if (!el) return;
-    const onFocusOut = (e: FocusEvent) => {
-      const next = e.relatedTarget as Node | null;
-      window.requestAnimationFrame(() => {
-        if (el.contains(document.activeElement)) return;
-        if (next && el.contains(next)) return;
-        setLearnNavOpen(false);
-      });
-    };
-    el.addEventListener('focusout', onFocusOut);
-    return () => el.removeEventListener('focusout', onFocusOut);
-  }, [learnNavOpen]);
-
   const learningGoalTarget = 7;
   const assignmentGoalTarget = 1;
 
@@ -256,74 +230,48 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Desktop Nav Links (Home View) */}
-        {isHomeView && (
+        {/* Desktop primary nav (home-style surfaces + learning) */}
+        {showPrimaryNavLinks && (
           <div className="hidden md:flex items-center gap-6">
-            <button className="flex items-center gap-1 cds-body-secondary text-[var(--cds-color-grey-700)] hover:text-[var(--cds-color-blue-700)] transition-colors">
+            <button
+              type="button"
+              className="flex items-center gap-1 cds-body-secondary text-[var(--cds-color-grey-700)] hover:text-[var(--cds-color-blue-700)] transition-colors"
+            >
               Explore
               <Icons.ChevronDown className="w-4 h-4" />
             </button>
-            <div
-              className="relative"
-              ref={learnNavRef}
-              onMouseEnter={() => setLearnNavOpen(true)}
-              onMouseLeave={() => setLearnNavOpen(false)}
+            <button
+              type="button"
+              className={`cds-body-secondary transition-colors ${
+                primaryNavView === 'dashboard'
+                  ? 'text-[var(--cds-color-blue-700)] font-semibold'
+                  : 'text-[var(--cds-color-grey-700)] hover:text-[var(--cds-color-blue-700)]'
+              }`}
+              aria-current={primaryNavView === 'dashboard' ? 'page' : undefined}
+              onClick={() => onNavigate?.('dashboard')}
             >
-              <button
-                type="button"
-                className="flex items-center gap-1 cds-body-secondary text-[var(--cds-color-grey-700)] hover:text-[var(--cds-color-blue-700)] transition-colors"
-                aria-expanded={learnNavOpen}
-                aria-haspopup="menu"
-                aria-controls="primary-learn-nav-menu"
-                onFocus={() => setLearnNavOpen(true)}
-                onClick={() => {
-                  onNavigate?.('home');
-                  setLearnNavOpen(false);
-                }}
-              >
-                Backpack
-                <Icons.ChevronDown
-                  className={`w-4 h-4 transition-transform ${learnNavOpen ? 'rotate-180' : ''}`}
+              My Learning
+            </button>
+            <button
+              type="button"
+              className={`inline-flex items-center gap-1.5 cds-body-secondary transition-colors ${
+                primaryNavView === 'feed'
+                  ? 'text-[var(--cds-color-blue-700)] font-semibold'
+                  : 'text-[var(--cds-color-grey-700)] hover:text-[var(--cds-color-blue-700)]'
+              }`}
+              aria-current={primaryNavView === 'feed' ? 'page' : undefined}
+              aria-label={showFeedNewActivityDot ? 'Feed, new activity in your cohorts' : undefined}
+              onClick={() => onNavigate?.('feed')}
+            >
+              Feed
+              {showFeedNewActivityDot ? (
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full bg-[var(--cds-color-blue-700)] ring-2 ring-[var(--cds-color-white)]"
+                  title="New activity in your cohorts"
+                  aria-hidden
                 />
-              </button>
-              {learnNavOpen ? (
-                <div className="absolute left-0 top-full z-50 min-w-[12.5rem] pt-2">
-                <div
-                  id="primary-learn-nav-menu"
-                  role="menu"
-                  aria-orientation="vertical"
-                  className="rounded-xl border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] py-1 shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
-                >
-                  {(
-                    [
-                      { view: 'home' as const, label: 'Work' },
-                      { view: 'dashboard' as const, label: 'Supplies' },
-                      { view: 'feed' as const, label: 'Snacks' },
-                    ] as const
-                  ).map((item) => (
-                    <button
-                      key={item.view}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={primaryNavView === item.view}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left cds-body-secondary text-[var(--cds-color-grey-900)] hover:bg-[var(--cds-color-grey-50)]"
-                      onClick={() => {
-                        onNavigate?.(item.view);
-                        setLearnNavOpen(false);
-                      }}
-                    >
-                      {primaryNavView === item.view ? (
-                        <Icons.Check className="h-4 w-4 shrink-0 text-[var(--cds-color-blue-700)]" strokeWidth={2.5} />
-                      ) : (
-                        <span className="h-4 w-4 shrink-0" aria-hidden />
-                      )}
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-                </div>
               ) : null}
-            </div>
+            </button>
           </div>
         )}
       </div>
@@ -577,7 +525,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setUserMenuOpen(false);
                     }}
                   >
-                    Supplies
+                    My Learning
                   </button>
                 </div>
               ) : null}

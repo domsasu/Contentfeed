@@ -18,6 +18,7 @@ import {
   sumLessonPoints,
 } from '../skills';
 import { useSiteVariant } from '../context/SiteVariantContext';
+import { MiniFeed } from './MiniFeed';
 
 // Assessment sub-skill results type - matches App.tsx
 interface AssessmentSubSkillResults {
@@ -39,6 +40,7 @@ interface HomeProps {
   dailyGoalCompletions?: number;
   assessmentResults?: AssessmentSubSkillResults | null;
   onNavigateToDashboard?: () => void;
+  onNavigateToFeed?: () => void;
   onTakeSkillAssessment?: () => void;
   dailyTimeGoal?: number;
   introModalClosed?: boolean;
@@ -459,6 +461,7 @@ export const Home: React.FC<HomeProps> = ({
     dailyGoalCompletions = 0,
     assessmentResults,
     onNavigateToDashboard,
+    onNavigateToFeed,
     onTakeSkillAssessment,
     dailyTimeGoal = 60,
     introModalClosed = true,
@@ -901,7 +904,7 @@ export const Home: React.FC<HomeProps> = ({
       <div className="max-w-[1440px] mx-auto px-6 py-10 space-y-12">
 
         {/* Leaderboard: collapsed strip + full view in drawer */}
-        <HomeLeaderboard selectedCohort={selectedCohort} onSelectCohort={setSelectedCohort} />
+        {onNavigateToFeed ? <MiniFeed onOpenFeed={onNavigateToFeed} /> : null}
 
         {/* Course Recommendations - loads in after top section */}
         <div className="animate-widget-slide-up-content">
@@ -1125,6 +1128,8 @@ export const Home: React.FC<HomeProps> = ({
             </button>
           </div>
         </div>
+
+        <HomeLeaderboard selectedCohort={selectedCohort} onSelectCohort={setSelectedCohort} />
 
       </div>
     </div>
