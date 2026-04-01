@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Icons } from '../Icons';
 import type { FeedPlaceholderItem, FeedPlaceholderMediaType } from '../../constants/feedCohorts';
 
@@ -41,13 +41,48 @@ function formatEngagementCount(n: number): string {
 }
 
 export const FeedMediaCard: React.FC<FeedMediaCardProps> = ({ item }) => {
-  const { type, title, subtitle, meta, thumbnailUrl, thumbnailAttribution, thumbnailAttributionUrl } =
-    item;
+  const {
+    type,
+    title,
+    subtitle,
+    meta,
+    articleUrl,
+    podcastAudioUrl,
+    thumbnailUrl,
+    thumbnailAttribution,
+    thumbnailAttributionUrl,
+  } = item;
+  const podcastTitleId = useId();
+  const podcastAudioRef = useRef<HTMLAudioElement>(null);
+  const [podcastPlayerOpen, setPodcastPlayerOpen] = useState(false);
   const { cheer, share } = useMemo(() => engagementMetrics(type, title), [type, title]);
   const [cheered, setCheered] = useState(false);
   const [cheerBurstKey, setCheerBurstKey] = useState(0);
   const [cheerPopKey, setCheerPopKey] = useState(0);
   const displayedCheer = cheer + (cheered ? 1 : 0);
+
+  const closePodcastPlayer = useCallback(() => {
+    const a = podcastAudioRef.current;
+    if (a) {
+      a.pause();
+      a.currentTime = 0;
+    }
+    setPodcastPlayerOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!podcastPlayerOpen || !podcastAudioUrl) return;
+    void podcastAudioRef.current?.play().catch(() => {});
+  }, [podcastPlayerOpen, podcastAudioUrl]);
+
+  useEffect(() => {
+    if (!podcastPlayerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closePodcastPlayer();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [podcastPlayerOpen, closePodcastPlayer]);
 
   return (
     <article className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-4 shadow-sm">
@@ -109,7 +144,7 @@ export const FeedMediaCard: React.FC<FeedMediaCardProps> = ({ item }) => {
       )}
 
       {type === 'podcast' && (
-        <div className="mb-3 overflow-hidden rounded-lg border border-[var(--cds-color-grey-100)] bg-[#0a2540]">
+        <div className="relative mb-3 overflow-hidden rounded-lg border border-[var(--cds-color-grey-100)] bg-[#0a2540]">
           <img
             src="/feed/coursera-podcast-banner.png"
             alt="The Coursera Podcast — Podcast · Coursera"
@@ -117,6 +152,40 @@ export const FeedMediaCard: React.FC<FeedMediaCardProps> = ({ item }) => {
             loading="lazy"
             decoding="async"
           />
+          {podcastPlayerOpen && podcastAudioUrl ? (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={podcastTitleId}
+              className="absolute inset-0 z-10 flex items-center justify-center p-3"
+            >
+              <div
+                className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
+                aria-hidden
+              />
+              <div className="relative z-[1] flex w-full max-w-md flex-col items-stretch gap-3">
+                <span id={podcastTitleId} className="sr-only">
+                  {title}
+                </span>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a2540]"
+                    aria-label="Close podcast player"
+                    onClick={closePodcastPlayer}
+                  >
+                    <Icons.Close className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+                  </button>
+                </div>
+                <audio
+                  ref={podcastAudioRef}
+                  src={podcastAudioUrl}
+                  controls
+                  className="w-full min-w-0 rounded-md bg-[var(--cds-color-white)]"
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -125,8 +194,14 @@ export const FeedMediaCard: React.FC<FeedMediaCardProps> = ({ item }) => {
         {type === 'podcast' ? (
           <button
             type="button"
-            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-transparent p-1 text-[var(--cds-color-grey-975)] transition-colors hover:bg-[var(--cds-color-grey-100)] hover:text-[var(--cds-color-blue-700)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-500)] focus-visible:ring-offset-2"
+            disabled={!podcastAudioUrl}
+            aria-expanded={podcastPlayerOpen}
             aria-label={`Play podcast · ${title}`}
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-transparent p-1 text-[var(--cds-color-grey-975)] transition-colors hover:bg-[var(--cds-color-grey-100)] hover:text-[var(--cds-color-blue-700)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-500)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+            onClick={() => {
+              if (!podcastAudioUrl) return;
+              setPodcastPlayerOpen(true);
+            }}
           >
             <Icons.Play className="h-8 w-8 shrink-0 translate-x-px" strokeWidth={1.75} aria-hidden />
           </button>
@@ -135,6 +210,19 @@ export const FeedMediaCard: React.FC<FeedMediaCardProps> = ({ item }) => {
       <p className="mt-1.5 cds-body-secondary text-[var(--cds-color-grey-600)] leading-relaxed">
         {subtitle}
       </p>
+
+      {type === 'article' && articleUrl ? (
+        <p className="mt-2">
+          <a
+            href={articleUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cds-body-secondary text-sm font-semibold text-[var(--cds-color-blue-700)] hover:underline"
+          >
+            Read on Coursera
+          </a>
+        </p>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-5 border-t border-[var(--cds-color-grey-50)] pt-3">
         <button

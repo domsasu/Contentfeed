@@ -1,3 +1,8 @@
+import {
+  PUBLISHED_ARTICLES_BY_COHORT,
+  type PublishedArticleRecord,
+} from './publishedArticles.generated';
+
 /** Feed-only cohort model; presentation data for FeedPage (not tied to course XP). */
 
 export type FeedCohortId =
@@ -174,6 +179,10 @@ export interface FeedPlaceholderItem {
   title: string;
   subtitle: string;
   meta: string;
+  /** Coursera article URL when `type === 'article'` and sourced from published CSV. */
+  articleUrl?: string;
+  /** Anchor/RSS enclosure URL when `type === 'podcast'` (MP3/M4A). */
+  podcastAudioUrl?: string;
   /** Unsplash (or other) thumbnail for video rows — filled client-side when API key is set. */
   thumbnailUrl?: string;
   /** E.g. "Photo by Name on Unsplash" — show near thumbnail per Unsplash guidelines. */
@@ -245,46 +254,64 @@ const COURSERA_PODCAST_EPISODES: ReadonlyArray<{
   title: string;
   blurb: string;
   meta: string;
+  /** RSS enclosure from https://anchor.fm/s/e96159c4/podcast/rss */
+  audioUrl: string;
 }> = [
   {
     title: 'Generative AI for Everyone with Andrew Ng',
     blurb: 'Andrew Ng on making generative AI approachable for learners and teams.',
     meta: 'Podcast · ~30 min',
+    audioUrl:
+      'https://anchor.fm/s/e96159c4/podcast/play/81027816/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2024-0-9%2F362776822-44100-2-6d0a6c03e31c5.m4a',
   },
   {
     title: 'Learning About Learning with Barbara Oakley',
     blurb: 'Barbara Oakley on how the brain learns—and practical study strategies.',
     meta: 'Podcast · ~28 min',
+    audioUrl:
+      'https://anchor.fm/s/e96159c4/podcast/play/77036348/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2023-9-10%2F350587218-44100-2-a9423f35c954a.m4a',
   },
   {
     title: 'Supporting Military Transitions with the USO',
     blurb: 'How partners help service members build skills for civilian careers.',
     meta: 'Podcast · ~35 min',
+    audioUrl:
+      'https://anchor.fm/s/e96159c4/podcast/play/114753323/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-0-29%2Fd942a9ec-f0fa-a90a-b1d2-75ecad8363c8.mp3',
   },
   {
     title: 'Building the Workforce of Tomorrow with AWS',
     blurb: 'Cloud skills, credentials, and training at scale for the labor market.',
     meta: 'Podcast · ~32 min',
+    audioUrl:
+      'https://anchor.fm/s/e96159c4/podcast/play/108394858/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-8-16%2F407603484-44100-2-860770ade8047.m4a',
   },
   {
     title: 'Navigating Disruption with Suraj Srinivasan',
     blurb: 'Strategy and leadership when industries and business models shift fast.',
     meta: 'Podcast · ~40 min',
+    audioUrl:
+      'https://anchor.fm/s/e96159c4/podcast/play/99013582/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-1-25%2Fff2d02b5-a1fa-9931-caac-f710a519dc4b.mp3',
   },
   {
     title: 'The Power of Prompt Engineering with Dr. Jules White',
     blurb: 'Prompt design as a skill—patterns, pitfalls, and what works in practice.',
     meta: 'Podcast · ~26 min',
+    audioUrl:
+      'https://anchor.fm/s/e96159c4/podcast/play/85551908/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2024-3-17%2F374657392-44100-2-0bc6050b96e2.m4a',
   },
   {
     title: 'Redefining Career Readiness with Texas A&M',
     blurb: 'Universities and employers aligning on what “career ready” means now.',
     meta: 'Podcast · ~33 min',
+    audioUrl:
+      'https://anchor.fm/s/e96159c4/podcast/play/111379434/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-10-18%2F412735608-44100-2-6557354f5e87.m4a',
   },
   {
     title: 'AI and Global Competitiveness with Ylli Bajraktari',
     blurb: 'Policy, talent, and national competitiveness in an AI-driven economy.',
     meta: 'Podcast · ~38 min',
+    audioUrl:
+      'https://anchor.fm/s/e96159c4/podcast/play/100372654/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-2-25%2F80bd76e8-5104-45ef-e6d2-7088ea541ebb.mp3',
   },
 ];
 
@@ -315,6 +342,108 @@ function podcastPlaceholderFromTemplateKey(
     title: `${e.title}${disciplineTag}`,
     subtitle: `${e.blurb} — ${COURSERA_PODCAST_SHOW}.${lens}`,
     meta: e.meta,
+    podcastAudioUrl: e.audioUrl,
+  };
+}
+
+/** Substrings matched against category | subcategory | epic | title for browse-discipline lens. */
+const DISCIPLINE_ARTICLE_KEYWORDS: Record<string, readonly string[]> = {
+  'arts-and-humanities': ['humanities', 'liberal arts', 'history', 'philosophy', 'fine arts', 'literature', 'language arts'],
+  business: ['business', 'mba', 'leadership', 'management', 'marketing', 'finance', 'accounting', 'entrepreneur'],
+  'computer-science': ['computer science', 'software', 'programming', 'developer', 'engineering', 'algorithm'],
+  'data-science': ['data science', 'machine learning', 'analytics', 'statistics', 'data analyst', 'big data'],
+  health: ['health', 'clinical', 'public health', 'nursing', 'medicine', 'healthcare', 'patient'],
+  'information-technology': ['it support', 'certification', 'network', 'cybersecurity', 'system admin', 'cloud', 'devops'],
+  'language-learning': ['language', 'spanish', 'french', 'english', 'bilingual', 'esl'],
+  'math-and-logic': ['math', 'calculus', 'algebra', 'logic', 'statistics'],
+  'personal-development': ['career', 'soft skills', 'motivation', 'productivity', 'well-being', 'mindset'],
+  'physical-science-and-engineering': ['physics', 'chemistry', 'engineering degree', 'mechanical', 'electrical'],
+  'social-sciences': ['psychology', 'sociology', 'economics', 'political', 'anthropology'],
+};
+
+function publishedArticleHaystack(r: PublishedArticleRecord): string {
+  return `${r.category}|${r.subcategory}|${r.epic}|${r.title}`.toLowerCase();
+}
+
+function articleMatchesDisciplineSlug(slug: string, r: PublishedArticleRecord): boolean {
+  const kws = DISCIPLINE_ARTICLE_KEYWORDS[slug];
+  if (!kws?.length) return true;
+  const h = publishedArticleHaystack(r);
+  return kws.some((kw) => h.includes(kw));
+}
+
+function articlePoolForCohort(
+  cohortId: FeedCohortId,
+  disciplineSlug: string | null
+): PublishedArticleRecord[] {
+  const pool = PUBLISHED_ARTICLES_BY_COHORT[cohortId];
+  if (!disciplineSlug || pool.length === 0) return pool;
+  const filtered = pool.filter((r) => articleMatchesDisciplineSlug(disciplineSlug, r));
+  return filtered.length > 0 ? filtered : pool;
+}
+
+function articlePairForCohort(
+  cohortId: FeedCohortId,
+  disciplineSlug: string | null
+): [PublishedArticleRecord, PublishedArticleRecord] {
+  const pool = articlePoolForCohort(cohortId, disciplineSlug);
+  const n = pool.length;
+  const fallback: PublishedArticleRecord = {
+    title: 'Coursera articles',
+    url: 'https://www.coursera.org/articles',
+    category: 'Learning',
+    subcategory: '',
+    epic: '',
+    persona: '',
+    articleType: '',
+    writer: '',
+  };
+  if (n === 0) return [fallback, fallback];
+
+  let h = 2166136261;
+  const seedStr = `coursera-article:${cohortId}:${disciplineSlug ?? 'all'}`;
+  for (let i = 0; i < seedStr.length; i++) {
+    h ^= seedStr.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const start = (h >>> 0) % n;
+  let secondIdx = (h >>> 16) % n;
+  if (secondIdx === start) secondIdx = (start + 1) % n;
+  // n === 1: secondIdx === start is acceptable (duplicate article)
+  return [pool[start]!, pool[secondIdx]!];
+}
+
+function articleMetaFromType(articleType: string): string {
+  const t = articleType.trim().toLowerCase();
+  if (t.includes('long explainer')) return 'Article · 8 min read';
+  if (t.includes('degree overview')) return 'Article · 6 min read';
+  if (t === 'skills') return 'Article · 4 min read';
+  if (t.includes('career options') || t.includes('career path')) return 'Article · 5 min read';
+  if (t.includes('comparison')) return 'Article · 7 min read';
+  if (t.includes('interview')) return 'Article · 6 min read';
+  if (t.includes('how to')) return 'Article · 5 min read';
+  if (t.includes('salary')) return 'Article · 6 min read';
+  if (t.includes('certification')) return 'Article · 5 min read';
+  if (t.includes('resume')) return 'Article · 4 min read';
+  return 'Article · Coursera';
+}
+
+function articlePlaceholderFromTemplateKey(
+  key: 'a1' | 'a2',
+  cohortId: FeedCohortId,
+  disciplineSlug: string | null,
+  lens: string,
+  disciplineTag: string
+): FeedPlaceholderItem {
+  const [first, second] = articlePairForCohort(cohortId, disciplineSlug);
+  const r = key === 'a1' ? first : second;
+  const byline = r.writer ? ` · ${r.writer}` : '';
+  return {
+    type: 'article',
+    title: `${r.title}${disciplineTag}`,
+    subtitle: `Coursera article · ${r.category}${byline}.${lens}`,
+    meta: articleMetaFromType(r.articleType),
+    articleUrl: r.url,
   };
 }
 
@@ -327,7 +456,8 @@ function itemFromTemplate(
   theme: string,
   courseHint: string,
   lens: string,
-  disciplineTag: string
+  disciplineTag: string,
+  disciplineSlug: string | null
 ): FeedPlaceholderItem {
   switch (key) {
     case 'v1':
@@ -345,19 +475,9 @@ function itemFromTemplate(
         meta: 'Video · 2:05',
       };
     case 'a1':
-      return {
-        type: 'article',
-        title: `Reading list · ${theme}${disciplineTag}`,
-        subtitle: `Placeholder article summary: key ideas from this week’s cohort-recommended reads.${lens}`,
-        meta: 'Article · 3 min read',
-      };
+      return articlePlaceholderFromTemplateKey('a1', cohortId, disciplineSlug, lens, disciplineTag);
     case 'a2':
-      return {
-        type: 'article',
-        title: `Industry note · ${theme}${disciplineTag}`,
-        subtitle: `Placeholder briefing: how teams apply these skills in the wild.${lens}`,
-        meta: 'Article · 5 min read',
-      };
+      return articlePlaceholderFromTemplateKey('a2', cohortId, disciplineSlug, lens, disciplineTag);
     case 'p1':
       return podcastPlaceholderFromTemplateKey('p1', cohortId, lens, disciplineTag);
     case 'p2':
@@ -426,7 +546,9 @@ function itemsForCohort(
   const lens = lensSuffix(disciplineLabel);
   const disciplineTag = disciplineLabel ? ` · ${disciplineLabel}` : '';
   const order = feedTemplateKeysForCohort(id, disciplineSlug);
-  return order.map((key) => itemFromTemplate(key, id, theme, courseHint, lens, disciplineTag));
+  return order.map((key) =>
+    itemFromTemplate(key, id, theme, courseHint, lens, disciplineTag, disciplineSlug)
+  );
 }
 
 export interface GetFeedPlaceholderItemsOptions {
