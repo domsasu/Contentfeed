@@ -16,12 +16,11 @@ import { PlanConfirmationModal } from './components/PlanConfirmationModal';
 import { SkillProgressModal } from './components/SkillProgressModal';
 import { MyLearning } from './components/MyLearning';
 import { Home } from './components/Home';
-import { FeedPage, type CommunitySurface } from './components/FeedPage';
+import { FeedPage } from './components/FeedPage';
 import { AssessmentStart } from './components/AssessmentStart';
 import { AssessmentResult } from './components/AssessmentResult';
 import { BadgeAchievement } from './components/BadgeAchievement';
 import { COURSE_DATA } from './constants';
-import type { FeedCohortId } from './constants/feedCohorts';
 import {
   aggregateSkillPoints,
   buildDailyGoalLessonIds,
@@ -35,6 +34,9 @@ import {
 import { Lesson, CourseData, Status, ContentType } from './types';
 
 type View = 'learning' | 'dashboard' | 'home' | 'feed' | 'assessment' | 'assessment-result' | 'badge-achievement';
+
+/** User career goal (header, home mini-feed); align with MyLearning / assessment copy when profile exists. */
+const USER_CAREER_GOAL_TITLE = 'Data Analyst';
 
 // Assessment sub-skill results - tracks points earned per sub-skill from assessments
 export interface AssessmentSubSkillResults {
@@ -695,23 +697,9 @@ const App: React.FC = () => {
     setCurrentView('home');
   };
 
-  const [feedInitialCohortId, setFeedInitialCohortId] = useState<FeedCohortId | undefined>(undefined);
-  const [feedInitialCommunityTab, setFeedInitialCommunityTab] = useState<CommunitySurface | undefined>(
-    undefined
-  );
-
-  const navigateToFeed = useCallback((opts?: { cohortId?: FeedCohortId; tab?: CommunitySurface }) => {
-    if (opts?.cohortId) setFeedInitialCohortId(opts.cohortId);
-    if (opts?.tab) setFeedInitialCommunityTab(opts.tab);
+  const navigateToFeed = useCallback(() => {
     setCurrentView('feed');
   }, []);
-
-  useEffect(() => {
-    if (currentView !== 'feed') {
-      setFeedInitialCohortId(undefined);
-      setFeedInitialCommunityTab(undefined);
-    }
-  }, [currentView]);
 
   const navigateToAssessment = () => {
     setCurrentView('assessment');
@@ -766,7 +754,7 @@ const App: React.FC = () => {
           currentView === 'learning'
         }
         onNavigate={(view) => setCurrentView(view)}
-        careerTitle={currentView === 'home' || currentView === 'dashboard' || currentView === 'feed' ? 'Data Analyst' : undefined}
+        careerTitle={currentView === 'home' || currentView === 'dashboard' || currentView === 'feed' ? USER_CAREER_GOAL_TITLE : undefined}
         primaryNavView={
           currentView === 'home' || currentView === 'dashboard' || currentView === 'feed'
             ? currentView
@@ -792,13 +780,13 @@ const App: React.FC = () => {
             onTakeSkillAssessment={navigateToAssessment}
             dailyTimeGoal={dailyTimeGoal}
             introModalClosed={true}
+            careerGoalTitle={USER_CAREER_GOAL_TITLE}
           />
         )}
 
         {currentView === 'feed' && (
           <FeedPage
-            initialSelectedCohortId={feedInitialCohortId}
-            initialCommunityTab={feedInitialCommunityTab}
+            careerGoalTitle={USER_CAREER_GOAL_TITLE}
           />
         )}
 

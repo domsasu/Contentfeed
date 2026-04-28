@@ -19,11 +19,11 @@ interface HeaderProps {
   showPartnerLogo?: boolean;
   onLogoClick?: () => void;
   isHomeView?: boolean;
-  /** When true, show Explore + My Learning + Community in the desktop header (e.g. home, dashboard, feed, learning). */
+  /** When true, show Explore + My Learning + Feed in the desktop header (e.g. home, dashboard, feed, learning). */
   showPrimaryNavLinks?: boolean;
   onNavigate?: (view: HeaderNavigateTarget) => void;
   careerTitle?: string;
-  /** Which primary surface is active for nav emphasis (My Learning / Community); use `home` when neither applies. */
+  /** Which primary surface is active for nav emphasis (My Learning / Feed); use `home` when neither applies. */
   primaryNavView?: 'home' | 'dashboard' | 'feed';
 }
 
@@ -260,10 +260,10 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'text-[var(--cds-color-grey-700)] hover:text-[var(--cds-color-blue-700)]'
               }`}
               aria-current={primaryNavView === 'feed' ? 'page' : undefined}
-              aria-label={showFeedNewActivityDot ? 'Community, new activity in your cohorts' : undefined}
+              aria-label={showFeedNewActivityDot ? 'Feed, new activity in your cohorts' : undefined}
               onClick={() => onNavigate?.('feed')}
             >
-              Community
+              Feed
               {showFeedNewActivityDot ? (
                 <span
                   className="h-2 w-2 shrink-0 rounded-full bg-[var(--cds-color-blue-700)] animate-header-activity-dot-glow"

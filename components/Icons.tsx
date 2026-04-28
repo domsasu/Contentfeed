@@ -36,6 +36,7 @@ import {
   History,
   RefreshCw,
   Share,
+  Bookmark,
   Sparkles,
   ArrowDown,
   Download,
@@ -94,6 +95,8 @@ export const Icons = {
   History: History,
   Retry: RefreshCw,
   Share: Share,
+  /** Save / bookmark clip */
+  Save: Bookmark,
   Download: Download,
   Sparkles: Sparkles,
   Info: Info,
