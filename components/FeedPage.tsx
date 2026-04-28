@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSiteVariant } from '../context/SiteVariantContext';
 import {
   JOINABLE_FEED_COHORT_IDS,
@@ -10,18 +10,36 @@ import {
 import { DATA_SCIENCE_DISCIPLINE_SLUG } from '../constants/feedPreviewVideos';
 import { FullFeedVideoMosaic } from './feed/FullFeedVideoMosaic';
 import { FeedPageCategoryPills } from './feed/FeedPageCategoryPills';
+import { useFeedSavedClips } from './feed/feedSavedClips';
 
 const FEED_PAGE_SIZE = 5;
 
 export interface FeedPageProps {
-  /** Shown in the left rail (goal chip), aligned with header / Home. */
-  careerGoalTitle: string;
+  onNavigateToSaved?: () => void;
+  categorySlug: string | null;
+  onCategoryChange: (slug: string | null) => void;
 }
 
-export const FeedPage: React.FC<FeedPageProps> = ({ careerGoalTitle }) => {
+export const FeedPage: React.FC<FeedPageProps> = ({
+  onNavigateToSaved,
+  categorySlug,
+  onCategoryChange,
+}) => {
   const { variant, surface } = useSiteVariant();
+  const { isSaved, toggleSave, feedClipStableId } = useFeedSavedClips();
+  const [headerBookmarkSaveTick, setHeaderBookmarkSaveTick] = useState(0);
 
-  const [categorySlug, setCategorySlug] = useState<string | null>('data-science');
+  const onToggleSaveWithHeaderMotion = useCallback(
+    (item: FeedPlaceholderItem, clipSrc: string) => {
+      const id = feedClipStableId(item, clipSrc);
+      const was = isSaved(id);
+      toggleSave(item, clipSrc);
+      if (!was) {
+        setHeaderBookmarkSaveTick((n) => n + 1);
+      }
+    },
+    [isSaved, toggleSave, feedClipStableId]
+  );
 
   const streamCohortIds = useMemo(
     () => Array.from(new Set<FeedCohortId>([...JOINED_FEED_COHORT_IDS, ...JOINABLE_FEED_COHORT_IDS])),
@@ -78,15 +96,24 @@ export const FeedPage: React.FC<FeedPageProps> = ({ careerGoalTitle }) => {
       >
         <div className="relative z-10 max-w-[1440px] mx-auto px-4 md:px-6 pb-4 md:pb-5 pt-4 md:pt-5">
           <div id="feed-page-videos" data-site-surface="feed">
-            <FeedPageCategoryPills selectedSlug={categorySlug} onSelect={setCategorySlug} />
+            <FeedPageCategoryPills
+              selectedSlug={categorySlug}
+              onSelect={onCategoryChange}
+              onOpenSavedLibrary={onNavigateToSaved}
+              headerBookmarkSaveTick={headerBookmarkSaveTick}
+            />
             <FullFeedVideoMosaic
+              mode="feed"
               items={pageItems}
-              careerGoalTitle={careerGoalTitle}
+              allVideoItems={videoItems}
               dataScienceClipLensActive={dataScienceClipLensActive}
               clipOrdinalOffset={clipOrdinalOffset}
               pageIndex={safePage}
               pageCount={pageCount}
               onPageIndexChange={setPageIndex}
+              isClipSaved={isSaved}
+              onToggleSave={onToggleSaveWithHeaderMotion}
+              feedClipStableId={feedClipStableId}
             />
           </div>
         </div>

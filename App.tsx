@@ -17,6 +17,7 @@ import { SkillProgressModal } from './components/SkillProgressModal';
 import { MyLearning } from './components/MyLearning';
 import { Home } from './components/Home';
 import { FeedPage } from './components/FeedPage';
+import { FeedSavedPage } from './components/feed/FeedSavedPage';
 import { AssessmentStart } from './components/AssessmentStart';
 import { AssessmentResult } from './components/AssessmentResult';
 import { BadgeAchievement } from './components/BadgeAchievement';
@@ -33,7 +34,7 @@ import {
 } from './skills';
 import { Lesson, CourseData, Status, ContentType } from './types';
 
-type View = 'learning' | 'dashboard' | 'home' | 'feed' | 'assessment' | 'assessment-result' | 'badge-achievement';
+type View = 'learning' | 'dashboard' | 'home' | 'feed' | 'feed-saved' | 'assessment' | 'assessment-result' | 'badge-achievement';
 
 /** User career goal (header, home mini-feed); align with MyLearning / assessment copy when profile exists. */
 const USER_CAREER_GOAL_TITLE = 'Data Analyst';
@@ -57,6 +58,8 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(() =>
     typeof window !== 'undefined' && window.location.hash.includes('figmacapture') ? 'feed' : 'home'
   );
+
+  const [feedCategorySlug, setFeedCategorySlug] = useState<string | null>('data-science');
   
   // Assessment results - tracks sub-skill scores from the assessment
   // These values match what's shown in AssessmentResult: 10/10 correct for first skill, 
@@ -701,6 +704,10 @@ const App: React.FC = () => {
     setCurrentView('feed');
   }, []);
 
+  const navigateToFeedSaved = useCallback(() => {
+    setCurrentView('feed-saved');
+  }, []);
+
   const navigateToAssessment = () => {
     setCurrentView('assessment');
   }
@@ -743,22 +750,25 @@ const App: React.FC = () => {
           setDailyGoalCompletions(prev => prev + 1);
         }}
         hideProgress={true} // Always hide the top progress bar as per new design request
-        backgroundColor={(currentView === 'dashboard' || currentView === 'home' || currentView === 'feed' || currentView === 'assessment' || isAssessmentResultView) ? 'bg-[var(--cds-color-white)]' : 'bg-[var(--cds-color-grey-25)]'}
-        showPartnerLogo={currentView !== 'dashboard' && currentView !== 'home' && currentView !== 'feed' && currentView !== 'assessment' && !isAssessmentResultView}
+        backgroundColor={(currentView === 'dashboard' || currentView === 'home' || currentView === 'feed' || currentView === 'feed-saved' || currentView === 'assessment' || isAssessmentResultView) ? 'bg-[var(--cds-color-white)]' : 'bg-[var(--cds-color-grey-25)]'}
+        showPartnerLogo={currentView !== 'dashboard' && currentView !== 'home' && currentView !== 'feed' && currentView !== 'feed-saved' && currentView !== 'assessment' && !isAssessmentResultView}
         onLogoClick={navigateToHome}
-        isHomeView={currentView === 'home' || currentView === 'dashboard' || currentView === 'feed'}
+        isHomeView={currentView === 'home' || currentView === 'dashboard' || currentView === 'feed' || currentView === 'feed-saved'}
         showPrimaryNavLinks={
           currentView === 'home' ||
           currentView === 'dashboard' ||
           currentView === 'feed' ||
+          currentView === 'feed-saved' ||
           currentView === 'learning'
         }
         onNavigate={(view) => setCurrentView(view)}
-        careerTitle={currentView === 'home' || currentView === 'dashboard' || currentView === 'feed' ? USER_CAREER_GOAL_TITLE : undefined}
+        careerTitle={currentView === 'home' || currentView === 'dashboard' || currentView === 'feed' || currentView === 'feed-saved' ? USER_CAREER_GOAL_TITLE : undefined}
         primaryNavView={
-          currentView === 'home' || currentView === 'dashboard' || currentView === 'feed'
-            ? currentView
-            : 'home'
+          currentView === 'feed-saved'
+            ? 'feed'
+            : currentView === 'home' || currentView === 'dashboard' || currentView === 'feed'
+              ? currentView
+              : 'home'
         }
       />
       
@@ -786,8 +796,14 @@ const App: React.FC = () => {
 
         {currentView === 'feed' && (
           <FeedPage
-            careerGoalTitle={USER_CAREER_GOAL_TITLE}
+            onNavigateToSaved={navigateToFeedSaved}
+            categorySlug={feedCategorySlug}
+            onCategoryChange={setFeedCategorySlug}
           />
+        )}
+
+        {currentView === 'feed-saved' && (
+          <FeedSavedPage onBackToFeed={navigateToFeed} />
         )}
 
         {currentView === 'learning' && (

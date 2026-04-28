@@ -14,6 +14,17 @@ export const MINI_FEED_REEL_SIZE =
 
 export const MINI_FEED_VIDEO_FRAME = `relative ${MINI_FEED_REEL_SIZE} rounded-t-[var(--cds-border-radius-200)] rounded-b-none bg-[var(--cds-color-white)]`;
 
+/**
+ * Full feed / saved mosaic: fill the card edge-to-edge. Height follows `aspect-[9/16]` from card width
+ * (no extra max-width/mx-auto). Card width is capped via FEED_MOSAIC_TILE_OUTER so everything scales together.
+ */
+export const FEED_MOSAIC_VIDEO_FRAME = `relative aspect-[9/16] w-full min-w-0 overflow-hidden rounded-t-[var(--cds-border-radius-200)] rounded-b-none bg-[var(--cds-color-white)]`;
+
+/**
+ * Mosaic cards fill their grid / flex cell; width comes from the parent layout.
+ */
+export const FEED_MOSAIC_TILE_OUTER = 'w-full min-w-0';
+
 export const MINI_FEED_CLIP_VIDEO_SRC = '/videos/career-change-mini.mov';
 export const MINI_FEED_CLIP_VIDEO_SRC_SECOND = '/videos/coursera-video-mini.mov';
 export const MINI_FEED_CLIP_VIDEO_SRC_THIRD = '/videos/career-change-3-mini.mov';

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { Bookmark, ChevronLeft } from 'lucide-react';
 import {
   Brackets,
   Briefcase,
   FlaskConical,
-  LayoutGrid,
   Paintbrush,
   Rocket,
   ShieldPlus,
@@ -24,61 +24,129 @@ const ICON_BY_SLUG: Record<string, LucideIcon> = {
   'computer-science': Brackets,
 };
 
-const pillClasses = (pressed: boolean) =>
-  `inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0056d2] focus-visible:ring-offset-2 ${
-    pressed
-      ? 'border-[#0056d2] bg-[#d2e7fb] text-[#0d1f3c] shadow-sm'
-      : 'border-[#dcecf9] bg-[#e8f4fd] text-[#232323] hover:bg-[#ddeef9]'
+const popularPillClasses = (active: boolean) =>
+  `inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0056d2] focus-visible:ring-offset-2 ${
+    active
+      ? 'border-[#1f2937] bg-[#1f2937] text-white shadow-sm'
+      : 'border-[#e5e7eb] bg-white text-[#1a1a1a] hover:border-slate-300'
   }`;
 
 export interface FeedPageCategoryPillsProps {
   /** `null` = all categories (no discipline filter). */
   selectedSlug: string | null;
   onSelect: (slug: string | null) => void;
+  /** Opens the dedicated Saved clips page. */
+  onOpenSavedLibrary?: () => void;
+  /** Increment when user saves a clip; plays a short header bookmark motion. */
+  headerBookmarkSaveTick?: number;
+  /** Main title next to the bookmark (e.g. “Saved clips” on the library route). */
+  pageTitle?: string;
+  /** When true, the bookmark is filled and the control reflects “on Saved clips”. */
+  savedPageActive?: boolean;
+  /** Renders a chevron back control to the left of the title (e.g. return to feed from Saved). */
+  onBack?: () => void;
+  /** When false, the category tab row is omitted (saved library only). */
+  showCategoryTabs?: boolean;
 }
 
 /**
- * Top category row for the full Feed page (single-select + All).
+ * "Explore Categories" page title + category filter row for the full Feed page.
  */
 export const FeedPageCategoryPills: React.FC<FeedPageCategoryPillsProps> = ({
   selectedSlug,
   onSelect,
+  onOpenSavedLibrary,
+  headerBookmarkSaveTick = 0,
+  pageTitle = 'Explore Categories',
+  savedPageActive = false,
+  onBack,
+  showCategoryTabs = true,
 }) => {
-  const allActive = selectedSlug === null;
+  const [vibrate, setVibrate] = useState(false);
+
+  useEffect(() => {
+    if (headerBookmarkSaveTick < 1) return;
+    setVibrate(true);
+    const t = window.setTimeout(() => setVibrate(false), 500);
+    return () => clearTimeout(t);
+  }, [headerBookmarkSaveTick]);
 
   return (
-    <div
-      role="tablist"
-      aria-label="Feed categories"
-      className="mb-5 flex w-full min-w-0 flex-wrap items-center gap-2"
-    >
-      <button
-        type="button"
-        role="tab"
-        aria-selected={allActive}
-        className={pillClasses(allActive)}
-        onClick={() => onSelect(null)}
+    <div className="mb-6 md:mb-8">
+      <div
+        className={`flex items-start justify-between gap-3 ${showCategoryTabs ? 'mb-5 md:mb-6' : ''}`}
       >
-        <LayoutGrid className="h-4 w-4 shrink-0 stroke-[1.75] text-current opacity-90" aria-hidden />
-        <span>All</span>
-      </button>
-      {FEED_PAGE_CATEGORY_CHIPS.map(({ slug, label }) => {
-        const Icon = ICON_BY_SLUG[slug] ?? Brackets;
-        const pressed = selectedSlug === slug;
-        return (
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-0 bg-transparent text-[var(--cds-color-grey-800)] shadow-none transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-700)] focus-visible:ring-offset-2"
+              aria-label="Back to explore feed"
+              title="Back to explore feed"
+            >
+              <ChevronLeft className="h-6 w-6" strokeWidth={2} aria-hidden />
+            </button>
+          ) : null}
+          <h1 className="min-w-0 text-left text-2xl font-bold tracking-tight text-[#1a1a1a] md:text-3xl">
+            {pageTitle}
+          </h1>
+        </div>
+        <div className="shrink-0">
           <button
-            key={slug}
+            type="button"
+            onClick={() => onOpenSavedLibrary?.()}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border-0 bg-transparent text-[var(--cds-color-grey-800)] shadow-none transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-700)] focus-visible:ring-offset-2"
+            aria-label="Saved clips"
+            title="Saved clips"
+            aria-pressed={savedPageActive}
+          >
+            <Bookmark
+              className={`h-5 w-5 ${savedPageActive ? 'fill-[var(--cds-color-grey-800)]' : ''} ${vibrate ? 'animate-bookmark-vibrate' : ''}`}
+              strokeWidth={2}
+            />
+          </button>
+        </div>
+      </div>
+      {showCategoryTabs ? (
+        <div
+          role="tablist"
+          aria-label="Feed categories"
+          className="flex w-full min-w-0 flex-wrap items-center gap-2"
+        >
+          <button
             type="button"
             role="tab"
-            aria-selected={pressed}
-            className={pillClasses(pressed)}
-            onClick={() => onSelect(slug)}
+            aria-selected={selectedSlug === null}
+            className={popularPillClasses(selectedSlug === null)}
+            onClick={() => onSelect(null)}
           >
-            <Icon className="h-4 w-4 shrink-0 stroke-[1.75] text-current opacity-90" aria-hidden />
-            <span>{label}</span>
+            All
           </button>
-        );
-      })}
+          {FEED_PAGE_CATEGORY_CHIPS.map(({ slug, label }) => {
+            const Icon = ICON_BY_SLUG[slug] ?? Brackets;
+            const active = selectedSlug === slug;
+            return (
+              <button
+                key={slug}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={popularPillClasses(active)}
+                onClick={() => onSelect(slug)}
+              >
+                <Icon
+                  className={`h-3.5 w-3.5 shrink-0 stroke-[1.75] ${
+                    active ? 'text-white' : 'text-[#6b7280]'
+                  }`}
+                  aria-hidden
+                />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 };

@@ -1,52 +1,225 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { FEED_DATA_SCIENCE_PREVIEW_VIDEOS } from '../../constants/feedPreviewVideos';
 import type { FeedPlaceholderItem } from '../../constants/feedCohorts';
 import { FeedClipVideoPreview } from './FeedClipVideoPreview';
 import { FeedVideoDescriptionLine } from './FeedVideoDescriptionLine';
 import {
+  FEED_MOSAIC_TILE_OUTER,
+  FEED_MOSAIC_VIDEO_FRAME,
   MINI_FEED_CLIP_SRC_BY_VIDEO_INDEX,
   MINI_FEED_CLIP_VIDEO_SRC,
-  MINI_FEED_VIDEO_FRAME,
 } from './feedMiniLayoutConstants';
 import { isFeedElementFullyVisible } from './feedViewport';
+import {
+  exitIfFullscreen,
+  requestElFullscreen,
+  type ImmersiveClip,
+} from './feedImmersiveShared';
+import { Icons } from '../Icons';
+import type { SavedFeedClip } from './feedSavedClips';
 
-export interface FullFeedVideoMosaicProps {
+function getFeedClipSrc(videoOrdinalAmongVideos: number, dataScienceClipLensActive: boolean): string {
+  const ds = dataScienceClipLensActive;
+  if (ds && videoOrdinalAmongVideos < FEED_DATA_SCIENCE_PREVIEW_VIDEOS.length) {
+    return FEED_DATA_SCIENCE_PREVIEW_VIDEOS[videoOrdinalAmongVideos]!;
+  }
+  return (
+    MINI_FEED_CLIP_SRC_BY_VIDEO_INDEX[
+      ds
+        ? videoOrdinalAmongVideos - FEED_DATA_SCIENCE_PREVIEW_VIDEOS.length
+        : videoOrdinalAmongVideos
+    ] ?? MINI_FEED_CLIP_VIDEO_SRC
+  );
+}
+
+type MosaicShared = {
+  isClipSaved: (id: string) => boolean;
+  onToggleSave: (item: FeedPlaceholderItem, clipSrc: string) => void;
+  feedClipStableId: (item: FeedPlaceholderItem, clipSrc: string) => string;
+};
+
+export type FullFeedVideoMosaicFeedProps = MosaicShared & {
+  mode: 'feed';
   items: FeedPlaceholderItem[];
-  careerGoalTitle: string;
-  /** Left-rail line above the goal chip. */
-  goalLineLabel?: string;
-  /** When the Data Science category is active, use Sprint 2 preview MOVs for leading tiles. */
+  allVideoItems: FeedPlaceholderItem[];
   dataScienceClipLensActive: boolean;
-  /** Global video index of the first tile on this page (for clip URL rotation). */
   clipOrdinalOffset: number;
   pageIndex: number;
   pageCount: number;
   onPageIndexChange: (index: number) => void;
-}
+};
+
+export type FullFeedVideoMosaicSavedProps = MosaicShared & {
+  mode: 'saved';
+  /** Persisted rows — same `item` + `clipSrc` the user saved from the feed. */
+  savedClips: SavedFeedClip[];
+};
+
+export type FullFeedVideoMosaicProps = FullFeedVideoMosaicFeedProps | FullFeedVideoMosaicSavedProps;
 
 /**
- * One row of video tiles + dot pagination (full Feed). Layout matches Home MiniFeed.
+ * One row of video tiles; expanded mode uses a playlist in a fullscreen shell.
+ * Feed and Saved library share this implementation so tiles match exactly.
  */
-export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = ({
-  items,
-  careerGoalTitle,
-  goalLineLabel = 'Your career feed',
-  dataScienceClipLensActive,
-  clipOrdinalOffset,
-  pageIndex: safePage,
-  pageCount,
-  onPageIndexChange,
-}) => {
+export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) => {
+  const { isClipSaved, onToggleSave, feedClipStableId } = props;
+  const isFeed = props.mode === 'feed';
+  const items = isFeed ? props.items : null;
+  const allVideoItems = isFeed ? props.allVideoItems : null;
+  const dataScienceClipLensActive = isFeed ? props.dataScienceClipLensActive : false;
+  const clipOrdinalOffset = isFeed ? props.clipOrdinalOffset : 0;
+  const safePage = isFeed ? props.pageIndex : 0;
+  const pageCount = isFeed ? props.pageCount : 1;
+  const onPageIndexChange = isFeed ? props.onPageIndexChange : () => {};
+  const savedClips = !isFeed ? props.savedClips : [];
+  const ds = dataScienceClipLensActive;
   const sectionRef = useRef<HTMLElement | null>(null);
+  const immersiveShellRef = useRef<HTMLDivElement | null>(null);
+  const immersiveVideoRef = useRef<HTMLVideoElement | null>(null);
   const [sectionFullyOnScreen, setSectionFullyOnScreen] = useState(false);
   const [activePlayIndex, setActivePlayIndex] = useState<number | null>(null);
   const [clipUnmuted, setClipUnmuted] = useState(false);
   const [clipNonce, setClipNonce] = useState(0);
+  const [immersiveList, setImmersiveList] = useState<ImmersiveClip[] | null>(null);
+  const [immersiveIndex, setImmersiveIndex] = useState(0);
+  const immersiveListRef = useRef<ImmersiveClip[] | null>(null);
+  const immersiveOpenRef = useRef(false);
+  const hadNativeFullscreenRef = useRef(false);
+
+  useEffect(() => {
+    immersiveListRef.current = immersiveList;
+  }, [immersiveList]);
+
+  const inImmersive = immersiveList !== null && immersiveList.length > 0;
+  const safeImmersiveIndex =
+    inImmersive
+      ? Math.min(Math.max(0, immersiveIndex), immersiveList!.length - 1)
+      : 0;
+  const immersiveItem = inImmersive ? immersiveList![safeImmersiveIndex]! : null;
+  const immersiveSrc = immersiveItem?.clipSrc ?? '';
+  const playlistLen = immersiveList?.length ?? 0;
 
   useEffect(() => {
     if (activePlayIndex === null) return;
     setClipNonce((n) => n + 1);
   }, [activePlayIndex]);
+
+  const closeImmersive = useCallback(() => {
+    hadNativeFullscreenRef.current = false;
+    immersiveOpenRef.current = false;
+    setImmersiveList(null);
+    setImmersiveIndex(0);
+    void exitIfFullscreen();
+  }, []);
+
+  const goImmersivePrev = useCallback(() => {
+    setImmersiveIndex((idx) => (idx <= 0 ? 0 : idx - 1));
+  }, []);
+
+  const goImmersiveNext = useCallback(() => {
+    setImmersiveIndex((idx) => {
+      const L = immersiveListRef.current;
+      if (!L?.length) return idx;
+      return Math.min(idx + 1, L.length - 1);
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (immersiveList === null) {
+      immersiveOpenRef.current = false;
+      return;
+    }
+    const isFirstOpen = !immersiveOpenRef.current;
+    immersiveOpenRef.current = true;
+    if (!isFirstOpen) return;
+    const el = immersiveShellRef.current;
+    if (!el) return;
+    hadNativeFullscreenRef.current = false;
+    void requestElFullscreen(el)
+      .then(() => {
+        hadNativeFullscreenRef.current = true;
+      })
+      .catch(() => {
+        hadNativeFullscreenRef.current = false;
+      });
+  }, [immersiveList]);
+
+  useEffect(() => {
+    if (immersiveList === null) return;
+    const onFs = () => {
+      if (document.fullscreenElement === null && hadNativeFullscreenRef.current) {
+        hadNativeFullscreenRef.current = false;
+        immersiveOpenRef.current = false;
+        setImmersiveList(null);
+        setImmersiveIndex(0);
+      }
+    };
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, [immersiveList]);
+
+  useEffect(() => {
+    if (immersiveList === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeImmersive();
+        e.preventDefault();
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        goImmersivePrev();
+        e.preventDefault();
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        goImmersiveNext();
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [immersiveList, closeImmersive, goImmersivePrev, goImmersiveNext]);
+
+  useEffect(() => {
+    if (immersiveList === null) {
+      return;
+    }
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [immersiveList]);
+
+  useEffect(() => {
+    if (immersiveList === null) {
+      return;
+    }
+    setImmersiveIndex((i) => Math.min(i, Math.max(0, playlistLen - 1)));
+  }, [playlistLen, immersiveList]);
+
+  useEffect(() => {
+    if (immersiveList === null) {
+      return;
+    }
+    const v = immersiveVideoRef.current;
+    if (!v) return;
+    v.currentTime = 0;
+    v.muted = false;
+    void v.play().catch(() => {
+      v.muted = true;
+      void v.play().catch(() => {});
+    });
+  }, [immersiveList, safeImmersiveIndex, immersiveSrc]);
+
+  useEffect(() => {
+    if (!sectionFullyOnScreen) {
+      setClipUnmuted(false);
+      setActivePlayIndex(null);
+    }
+  }, [sectionFullyOnScreen]);
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -76,55 +249,188 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = ({
     };
   }, []);
 
-  useEffect(() => {
-    if (!sectionFullyOnScreen) {
-      setClipUnmuted(false);
+  const openImmersiveAtIndex = useCallback(
+    (globalIndex: number) => {
+      if (props.mode === 'saved') {
+        if (savedClips.length < 1) return;
+        setActivePlayIndex(null);
+        setClipUnmuted(false);
+        setImmersiveList(
+          savedClips.map((s) => ({ item: s.item, clipSrc: s.clipSrc }))
+        );
+        setImmersiveIndex(
+          Math.min(Math.max(0, globalIndex), savedClips.length - 1)
+        );
+        return;
+      }
+      if (!allVideoItems?.length) return;
+      const list: ImmersiveClip[] = allVideoItems.map((it, i) => ({
+        item: it,
+        clipSrc: getFeedClipSrc(i, ds),
+      }));
       setActivePlayIndex(null);
-    }
-  }, [sectionFullyOnScreen]);
+      setClipUnmuted(false);
+      setImmersiveList(list);
+      setImmersiveIndex(
+        Math.min(Math.max(0, globalIndex), allVideoItems.length - 1)
+      );
+    },
+    [props.mode, savedClips, allVideoItems, ds]
+  );
 
-  const ds = dataScienceClipLensActive;
-  const goalChip = careerGoalTitle.trim();
+  const immersiveNode =
+    immersiveItem && inImmersive ? (
+      <div
+        ref={immersiveShellRef}
+        className="fixed inset-0 z-[300] flex h-[100dvh] w-full flex-col bg-black/50 text-white"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Expanded video"
+      >
+        <div className="flex shrink-0 items-center justify-end border-b border-white/10 px-2 py-2 sm:px-3">
+          <button
+            type="button"
+            onClick={closeImmersive}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+            aria-label="Close"
+          >
+            <Icons.Close className="h-5 w-5" strokeWidth={2} />
+          </button>
+        </div>
+        <div className="flex min-h-0 min-w-0 flex-1 items-stretch justify-center gap-1 px-1 sm:gap-2 sm:px-3">
+          <button
+            type="button"
+            disabled={safeImmersiveIndex <= 0}
+            onClick={goImmersivePrev}
+            className="my-auto inline-flex h-12 w-10 shrink-0 items-center justify-center rounded-lg text-white/90 enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+            aria-label="Previous video"
+          >
+            <ChevronLeft className="h-8 w-8" strokeWidth={1.5} />
+          </button>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center py-2">
+            <video
+              ref={immersiveVideoRef}
+              key={immersiveSrc}
+              className="max-h-[min(70dvh,100%)] w-full max-w-4xl object-contain"
+              src={immersiveSrc}
+              playsInline
+              controls
+              autoPlay
+            />
+          </div>
+          <button
+            type="button"
+            disabled={safeImmersiveIndex >= playlistLen - 1}
+            onClick={goImmersiveNext}
+            className="my-auto inline-flex h-12 w-10 shrink-0 items-center justify-center rounded-lg text-white/90 enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+            aria-label="Next video"
+          >
+            <ChevronRight className="h-8 w-8" strokeWidth={1.5} />
+          </button>
+        </div>
+        <div className="shrink-0 border-t border-white/10 bg-black/30 px-4 py-3 sm:px-6 sm:py-4">
+          <div className="mx-auto max-w-4xl">
+            <p className="text-xs text-white/50 sm:text-sm">
+              {playlistLen > 0 ? `Clip ${safeImmersiveIndex + 1} of ${playlistLen}` : null}
+            </p>
+            <FeedVideoDescriptionLine
+              item={immersiveItem.item}
+              className="cds-body-secondary mt-1 text-[16px] leading-snug text-white/95 [text-wrap:pretty] sm:mt-2"
+            />
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  const sectionAria =
+    props.mode === 'saved'
+      ? 'Saved video clips'
+      : 'Video clips for your learning goal';
 
   return (
     <section
       ref={sectionRef}
-      className="p-4 sm:p-5 text-left"
-      aria-label="Video clips for your learning goal"
+      className="p-3 text-left sm:p-4"
+      aria-label={sectionAria}
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[11rem_minmax(0,1fr)] sm:grid-rows-[auto_auto] sm:items-stretch sm:gap-x-5 sm:gap-y-4">
-        <div className="flex min-h-0 w-full flex-col items-center justify-center gap-2 border-b border-[var(--cds-color-grey-100)] pb-4 text-center sm:row-start-1 sm:col-start-1 sm:h-full sm:border-b-0 sm:border-r sm:border-[var(--cds-color-grey-100)] sm:pb-0 sm:pr-5">
-          <p className="cds-body-secondary max-w-[12rem] text-[var(--cds-color-grey-800)]">{goalLineLabel}</p>
-          <span
-            className="cds-body-tertiary max-w-[12rem] truncate rounded-[var(--cds-border-radius-400)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] px-2 py-0.5 text-[var(--cds-color-grey-700)]"
-            title={goalChip}
-          >
-            {goalChip}
-          </span>
-        </div>
+      {typeof document !== 'undefined' && immersiveNode
+        ? createPortal(immersiveNode, document.body)
+        : null}
 
-        <div className="grid min-h-0 min-w-0 grid-cols-2 items-stretch gap-2 sm:row-start-1 sm:col-start-2 sm:flex sm:min-h-0 sm:min-w-0 sm:flex-nowrap sm:items-stretch sm:gap-3">
-          {items.length === 0 ? (
-            <p className="cds-body-secondary col-span-2 sm:col-span-1 sm:col-start-1 text-[var(--cds-color-grey-600)]">
+      <div className="flex flex-col gap-3 sm:gap-3">
+        <div
+          className="grid min-h-0 min-w-0 grid-cols-2 items-stretch gap-1.5 sm:gap-2.5 md:grid-cols-3 lg:grid-cols-5"
+        >
+          {props.mode === 'saved' ? (
+            savedClips.length === 0 ? (
+              <p className="cds-body-secondary col-span-2 w-full min-w-0 text-[var(--cds-color-grey-600)] md:col-span-3 lg:col-span-5">
+                Nothing saved yet. Save clips from the feed to see them here.
+              </p>
+            ) : (
+              savedClips.map((s, i) => {
+                const rowKey = `saved-${s.id}`;
+                const tileBase = `flex h-full ${FEED_MOSAIC_TILE_OUTER} flex-col overflow-hidden rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] text-left transition-colors hover:border-[var(--cds-color-grey-200)] group`;
+                const clipId = s.id;
+                const saved = isClipSaved(clipId);
+                const isActive = sectionFullyOnScreen && activePlayIndex === i;
+                const videoFrameClass = `${FEED_MOSAIC_VIDEO_FRAME} group`;
+                return (
+                  <div
+                    key={rowKey}
+                    className={tileBase}
+                    role="group"
+                    onMouseEnter={() => {
+                      if (sectionFullyOnScreen) setActivePlayIndex(i);
+                    }}
+                    onMouseLeave={() => setActivePlayIndex(null)}
+                    onFocusCapture={() => {
+                      if (sectionFullyOnScreen) setActivePlayIndex(i);
+                    }}
+                    onBlurCapture={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                        setActivePlayIndex(null);
+                      }
+                    }}
+                  >
+                    <div className={videoFrameClass}>
+                      <FeedClipVideoPreview
+                        sectionActive={sectionFullyOnScreen}
+                        isActiveSegment={isActive}
+                        segmentNonce={clipNonce}
+                        userUnmuted={clipUnmuted}
+                        onToggleMute={() => setClipUnmuted((m) => !m)}
+                        src={s.clipSrc}
+                        capAtSegmentEnd={false}
+                        onRequestImmersive={() => openImmersiveAtIndex(i)}
+                        saveControl={{
+                          saved,
+                          onToggle: () => onToggleSave(s.item, s.clipSrc),
+                        }}
+                      />
+                    </div>
+                    <div className="flex min-h-0 flex-1 flex-col justify-end px-1.5 pb-1.5 pt-1">
+                      <FeedVideoDescriptionLine item={s.item} />
+                    </div>
+                  </div>
+                );
+              })
+            )
+          ) : !items || items.length === 0 ? (
+            <p className="cds-body-secondary col-span-2 w-full min-w-0 text-[var(--cds-color-grey-600)] md:col-span-3 lg:col-span-5">
               No clips in this category yet.
             </p>
           ) : (
             items.map((item, i) => {
               const videoOrdinalAmongVideos = clipOrdinalOffset + i;
+              const globalIndex = videoOrdinalAmongVideos;
               const rowKey = `feed-tile-p${safePage}-${i}-${item.type}-${item.title.slice(0, 48)}`;
-              const tileBase =
-                'flex h-full min-w-0 sm:flex-1 flex-col overflow-hidden rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] text-left transition-colors hover:border-[var(--cds-color-grey-200)] group';
+              const tileBase = `flex h-full ${FEED_MOSAIC_TILE_OUTER} flex-col overflow-hidden rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] text-left transition-colors hover:border-[var(--cds-color-grey-200)] group`;
+              const clipSrc = getFeedClipSrc(videoOrdinalAmongVideos, ds);
+              const clipId = feedClipStableId(item, clipSrc);
+              const saved = isClipSaved(clipId);
 
               const isActive = sectionFullyOnScreen && activePlayIndex === i;
-              const clipSrc =
-                ds && videoOrdinalAmongVideos < FEED_DATA_SCIENCE_PREVIEW_VIDEOS.length
-                  ? FEED_DATA_SCIENCE_PREVIEW_VIDEOS[videoOrdinalAmongVideos]!
-                  : MINI_FEED_CLIP_SRC_BY_VIDEO_INDEX[
-                      ds
-                        ? videoOrdinalAmongVideos - FEED_DATA_SCIENCE_PREVIEW_VIDEOS.length
-                        : videoOrdinalAmongVideos
-                    ] ?? MINI_FEED_CLIP_VIDEO_SRC;
-              const videoFrameClass = `${MINI_FEED_VIDEO_FRAME} group`;
+              const videoFrameClass = `${FEED_MOSAIC_VIDEO_FRAME} group`;
 
               return (
                 <div
@@ -153,9 +459,14 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = ({
                       onToggleMute={() => setClipUnmuted((m) => !m)}
                       src={clipSrc}
                       capAtSegmentEnd={false}
+                      onRequestImmersive={() => openImmersiveAtIndex(globalIndex)}
+                      saveControl={{
+                        saved,
+                        onToggle: () => onToggleSave(item, clipSrc),
+                      }}
                     />
                   </div>
-                  <div className="flex min-h-0 flex-1 flex-col justify-end px-2 pb-2 pt-1.5">
+                  <div className="flex min-h-0 flex-1 flex-col justify-end px-1.5 pb-1.5 pt-1">
                     <FeedVideoDescriptionLine item={item} />
                   </div>
                 </div>
@@ -164,9 +475,9 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = ({
           )}
         </div>
 
-        {pageCount > 1 ? (
+        {isFeed && pageCount > 1 ? (
           <div
-            className="flex gap-2 sm:col-start-2 sm:row-start-2"
+            className="flex gap-2"
             role="navigation"
             aria-label="Feed pages"
           >

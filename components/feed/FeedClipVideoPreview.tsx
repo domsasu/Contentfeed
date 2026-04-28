@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
+import { Bookmark } from 'lucide-react';
 import { Icons } from '../Icons';
 import { MINI_FEED_SEGMENT_SEC } from './feedMiniLayoutConstants';
 
@@ -12,6 +13,13 @@ export interface FeedClipVideoPreviewProps {
   src?: string;
   /** If true, timeupdate caps playback at the first `MINI_FEED_SEGMENT_SEC` (MiniFeed rotation). */
   capAtSegmentEnd?: boolean;
+  /** When set, clicking the main video area (not unmute/like/share) opens immersive full-screen in the parent. */
+  onRequestImmersive?: () => void;
+  /**
+   * Full-feed layout: **Share** moves to top-left, **Save** sits in the bottom bar (with Like).
+   * Omit on Home MiniFeed — bottom bar stays Like + Share, no save.
+   */
+  saveControl?: { saved: boolean; onToggle: () => void };
 }
 
 /**
@@ -25,6 +33,8 @@ export const FeedClipVideoPreview: React.FC<FeedClipVideoPreviewProps> = ({
   onToggleMute,
   src = '/videos/career-change-mini.mov',
   capAtSegmentEnd = true,
+  onRequestImmersive,
+  saveControl,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -73,7 +83,31 @@ export const FeedClipVideoPreview: React.FC<FeedClipVideoPreviewProps> = ({
         aria-hidden
         disablePictureInPicture
       />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] flex justify-center gap-2.5 bg-gradient-to-t from-black/45 to-transparent px-2 pb-2.5 pt-8 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+      {onRequestImmersive ? (
+        <button
+          type="button"
+          tabIndex={-1}
+          className="absolute inset-0 z-[1] cursor-pointer border-0 bg-transparent p-0"
+          aria-label="Open expanded video"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRequestImmersive();
+          }}
+        />
+      ) : null}
+      {saveControl ? (
+        <div className="pointer-events-none absolute left-0 top-0 z-[3] p-2 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+          <button
+            type="button"
+            className="pointer-events-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-black/55 text-white shadow-sm backdrop-blur-[2px] transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            aria-label="Share"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Icons.Share className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+          </button>
+        </div>
+      ) : null}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex justify-center gap-2.5 bg-gradient-to-t from-black/45 to-transparent px-2 pb-2.5 pt-8 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
         <button
           type="button"
           className="pointer-events-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-black/55 text-white shadow-sm backdrop-blur-[2px] transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
@@ -82,16 +116,35 @@ export const FeedClipVideoPreview: React.FC<FeedClipVideoPreviewProps> = ({
         >
           <Icons.Like className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
         </button>
-        <button
-          type="button"
-          className="pointer-events-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-black/55 text-white shadow-sm backdrop-blur-[2px] transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          aria-label="Share"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Icons.Share className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
-        </button>
+        {saveControl ? (
+          <button
+            type="button"
+            className="pointer-events-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-black/55 text-white shadow-sm backdrop-blur-[2px] transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            aria-pressed={saveControl.saved}
+            aria-label={saveControl.saved ? 'Remove from saved' : 'Save clip'}
+            onClick={(e) => {
+              e.stopPropagation();
+              saveControl.onToggle();
+            }}
+          >
+            <Bookmark
+              className={`h-5 w-5 ${saveControl.saved ? 'fill-white' : ''}`}
+              strokeWidth={2}
+              aria-hidden
+            />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="pointer-events-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-black/55 text-white shadow-sm backdrop-blur-[2px] transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            aria-label="Share"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Icons.Share className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+          </button>
+        )}
       </div>
-      <div className="pointer-events-none absolute inset-0 z-[2] flex items-start justify-end p-2 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+      <div className="pointer-events-none absolute right-0 top-0 z-[3] p-2 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
         <button
           type="button"
           className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-white/35 bg-black/55 px-2.5 py-1.5 text-[var(--cds-color-white)] shadow-sm backdrop-blur-[2px] transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
