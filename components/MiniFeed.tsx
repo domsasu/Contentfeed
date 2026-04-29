@@ -16,7 +16,6 @@ import {
 } from '../constants/feedPreviewVideos';
 import { isFeedElementFullyVisible } from './feed/feedViewport';
 import { FeedClipVideoPreview } from './feed/FeedClipVideoPreview';
-import { FeedVideoDescriptionLine } from './feed/FeedVideoDescriptionLine';
 import {
   MINI_FEED_CLIP_SRC_BY_VIDEO_INDEX,
   MINI_FEED_CLIP_VIDEO_SRC,
@@ -185,30 +184,17 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
           : `Feed for ${cohortMeta.label}. Use See all to open the full feed.`
       }
     >
-      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={openCommunityFeed}
-          className="inline-flex items-center gap-2 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-700)] focus-visible:ring-offset-2"
-        >
-          <span className="cds-subtitle-md text-[var(--cds-color-grey-975)]">See all</span>
-          <span className="material-symbols-rounded text-[var(--cds-color-grey-600)]" style={{ fontSize: '20px' }}>
-            arrow_forward
-          </span>
-        </button>
-      </div>
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[11rem_minmax(0,1fr)] sm:grid-rows-[auto_auto] sm:items-stretch sm:gap-x-5 sm:gap-y-4">
-        <div className="flex min-h-0 w-full flex-col items-center justify-center gap-2 border-b border-[var(--cds-color-grey-100)] pb-4 text-center sm:row-start-1 sm:col-start-1 sm:h-full sm:border-b-0 sm:border-r sm:border-[var(--cds-color-grey-100)] sm:pb-0 sm:pr-5">
-          <p className="cds-body-secondary max-w-[12rem] text-[var(--cds-color-grey-800)]">
-            Your career feed
-          </p>
-          <span
-            className="cds-body-tertiary max-w-[12rem] truncate rounded-[var(--cds-border-radius-400)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] px-2 py-0.5 text-[var(--cds-color-grey-700)]"
-            title={goalChipLabel}
-          >
-            {goalChipLabel}
-          </span>
+        <div className="flex min-h-0 w-full min-w-0 flex-col items-stretch justify-start border-b border-[var(--cds-color-grey-100)] pb-4 text-left sm:row-start-1 sm:col-start-1 sm:h-full sm:border-b-0 sm:border-r sm:border-[var(--cds-color-grey-100)] sm:pb-0 sm:pr-5">
+          <h2 className="cds-subtitle-lg mb-2 text-[var(--cds-color-grey-975)]">Your career feed</h2>
+          <div className="mb-4 flex flex-wrap gap-1">
+            <span
+              className="cds-body-secondary inline-flex h-8 max-w-full min-w-0 items-center truncate rounded-[var(--cds-border-radius-400)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] px-3 py-1 text-[var(--cds-color-grey-975)]"
+              title={goalChipLabel}
+            >
+              {goalChipLabel}
+            </span>
+          </div>
         </div>
 
         <div className="grid min-h-0 min-w-0 grid-cols-2 items-stretch gap-2 sm:row-start-1 sm:col-start-2 sm:flex sm:min-h-0 sm:min-w-0 sm:flex-nowrap sm:items-stretch sm:gap-3">
@@ -235,21 +221,17 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
               const videoFrameClass = `${MINI_FEED_VIDEO_FRAME} group`;
 
               const videoMeta = (
-                <>
-                  <div className={videoFrameClass}>
-                    <FeedClipVideoPreview
-                      sectionActive={sectionFullyOnScreen}
-                      isActiveSegment={isActiveVideoSegment}
-                      segmentNonce={segmentNonce}
-                      userUnmuted={clipUnmuted}
-                      onToggleMute={() => setClipUnmuted((m) => !m)}
-                      src={clipSrc}
-                    />
-                  </div>
-                  <div className="flex min-h-0 flex-1 flex-col justify-end px-2 pb-2 pt-1.5">
-                    <FeedVideoDescriptionLine item={item} />
-                  </div>
-                </>
+                <div className={videoFrameClass}>
+                  <FeedClipVideoPreview
+                    sectionActive={sectionFullyOnScreen}
+                    isActiveSegment={isActiveVideoSegment}
+                    segmentNonce={segmentNonce}
+                    userUnmuted={clipUnmuted}
+                    onToggleMute={() => setClipUnmuted((m) => !m)}
+                    src={clipSrc}
+                    reelInfoItem={item.type === 'video' ? item : undefined}
+                  />
+                </div>
               );
 
               return (
@@ -272,28 +254,42 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
             })}
         </div>
 
-        {pageCount > 1 ? (
-          <div
-            className="flex gap-2 sm:col-start-2 sm:row-start-2"
-            role="navigation"
-            aria-label="Feed pages"
-          >
-            {Array.from({ length: pageCount }, (_, p) => (
-              <button
-                key={p}
-                type="button"
-                aria-current={p === safePage ? 'page' : undefined}
-                aria-label={`Page ${p + 1} of ${pageCount}`}
-                onClick={() => setPageIndex(p)}
-                className={
-                  p === safePage
-                    ? 'h-2 w-6 shrink-0 rounded-full bg-[var(--cds-color-grey-975)] transition-colors'
-                    : 'h-2 w-2 shrink-0 rounded-full bg-[var(--cds-color-grey-200)] transition-colors hover:bg-[var(--cds-color-grey-300)]'
-                }
-              />
-            ))}
+        <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3 sm:col-start-2 sm:row-start-2">
+          <div className="flex min-h-2 min-w-0 flex-1 items-center justify-start sm:flex-initial">
+            {pageCount > 1 ? (
+              <div
+                className="flex shrink-0 items-center gap-2"
+                role="navigation"
+                aria-label="Feed pages"
+              >
+                {Array.from({ length: pageCount }, (_, p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    aria-current={p === safePage ? 'page' : undefined}
+                    aria-label={`Page ${p + 1} of ${pageCount}`}
+                    onClick={() => setPageIndex(p)}
+                    className={
+                      p === safePage
+                        ? 'h-2 w-6 shrink-0 rounded-full bg-[var(--cds-color-grey-975)] transition-colors'
+                        : 'h-2 w-2 shrink-0 rounded-full bg-[var(--cds-color-grey-200)] transition-colors hover:bg-[var(--cds-color-grey-300)]'
+                    }
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
-        ) : null}
+          <button
+            type="button"
+            onClick={openCommunityFeed}
+            className="inline-flex shrink-0 items-center gap-2 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-700)] focus-visible:ring-offset-2"
+          >
+            <span className="cds-subtitle-md text-[var(--cds-color-grey-975)]">See all</span>
+            <span className="material-symbols-rounded text-[var(--cds-color-grey-600)]" style={{ fontSize: '20px' }}>
+              arrow_forward
+            </span>
+          </button>
+        </div>
       </div>
     </section>
   );

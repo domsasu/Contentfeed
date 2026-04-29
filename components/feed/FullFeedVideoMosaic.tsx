@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { FEED_DATA_SCIENCE_PREVIEW_VIDEOS } from '../../constants/feedPreviewVideos';
 import type { FeedPlaceholderItem } from '../../constants/feedCohorts';
 import { FeedClipVideoPreview } from './FeedClipVideoPreview';
-import { FeedVideoDescriptionLine } from './FeedVideoDescriptionLine';
+import { FeedVideoClipReelInfo } from './FeedVideoClipReelInfo';
 import {
   FEED_MOSAIC_TILE_OUTER,
   FEED_MOSAIC_VIDEO_FRAME,
@@ -282,12 +282,20 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
     immersiveItem && inImmersive ? (
       <div
         ref={immersiveShellRef}
-        className="fixed inset-0 z-[300] flex h-[100dvh] w-full flex-col bg-black/50 text-white"
+        className="fixed inset-0 z-[300] flex h-[100dvh] w-full flex-col bg-black/75 text-white"
         role="dialog"
         aria-modal="true"
         aria-label="Expanded video"
       >
-        <div className="flex shrink-0 items-center justify-end border-b border-white/10 px-2 py-2 sm:px-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-2 py-2 sm:px-3">
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+            aria-label="Share"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Icons.Share className="h-5 w-5" strokeWidth={2} aria-hidden />
+          </button>
           <button
             type="button"
             onClick={closeImmersive}
@@ -333,10 +341,9 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
             <p className="text-xs text-white/50 sm:text-sm">
               {playlistLen > 0 ? `Clip ${safeImmersiveIndex + 1} of ${playlistLen}` : null}
             </p>
-            <FeedVideoDescriptionLine
-              item={immersiveItem.item}
-              className="cds-body-secondary mt-1 text-[16px] leading-snug text-white/95 [text-wrap:pretty] sm:mt-2"
-            />
+            <div className="mt-1 sm:mt-2">
+              <FeedVideoClipReelInfo item={immersiveItem.item} size="comfortable" />
+            </div>
           </div>
         </div>
       </div>
@@ -406,10 +413,8 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
                           saved,
                           onToggle: () => onToggleSave(s.item, s.clipSrc),
                         }}
+                        reelInfoItem={s.item.type === 'video' ? s.item : undefined}
                       />
-                    </div>
-                    <div className="flex min-h-0 flex-1 flex-col justify-end px-1.5 pb-1.5 pt-1">
-                      <FeedVideoDescriptionLine item={s.item} />
                     </div>
                   </div>
                 );
@@ -464,10 +469,8 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
                         saved,
                         onToggle: () => onToggleSave(item, clipSrc),
                       }}
+                      reelInfoItem={item.type === 'video' ? item : undefined}
                     />
-                  </div>
-                  <div className="flex min-h-0 flex-1 flex-col justify-end px-1.5 pb-1.5 pt-1">
-                    <FeedVideoDescriptionLine item={item} />
                   </div>
                 </div>
               );

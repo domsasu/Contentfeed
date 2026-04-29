@@ -1,13 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
-import {
-  CohortId,
-  COHORTS,
-  COHORT_LEADERBOARD,
-  MiniLeaderboardRow,
-} from './MyLearning';
-import { LetterAvatar } from './WeeklyLearningLeaderboard';
 import { CourseData, Status, ContentType } from '../types';
 import { PlanType } from './PersonalizeLearningModal';
 import {
@@ -358,82 +351,6 @@ const collectionCourses = [
   }
 ];
 
-function HomeLeaderboard({
-  selectedCohort,
-  onSelectCohort,
-}: {
-  selectedCohort: CohortId;
-  onSelectCohort: (id: CohortId) => void;
-}) {
-  const board = COHORT_LEADERBOARD[selectedCohort];
-
-  return (
-    <div className="rounded-[var(--cds-border-radius-200)] bg-[var(--cds-color-white)] p-4 sm:p-5">
-      <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="cds-subtitle-lg text-[var(--cds-color-grey-975)]">Leaderboard</h2>
-            <div className="flex min-w-0 flex-wrap gap-2">
-              {COHORTS.map((cohort) => {
-                const isActive = cohort.id === selectedCohort;
-                return (
-                  <button
-                    key={cohort.id}
-                    type="button"
-                    onClick={() => onSelectCohort(cohort.id)}
-                    className={`cds-body-secondary h-8 rounded-[var(--cds-border-radius-400)] px-3 py-1 transition-colors ${
-                      isActive
-                        ? 'bg-[var(--cds-color-grey-800)] text-[var(--cds-color-white)]'
-                        : 'bg-[var(--cds-color-white)] border border-[var(--cds-color-grey-100)] text-[var(--cds-color-grey-975)] hover:bg-[var(--cds-color-grey-25)]'
-                    }`}
-                  >
-                    {cohort.label}{' '}
-                    <span className={isActive ? 'text-[var(--cds-color-grey-200)]' : 'text-[var(--cds-color-grey-600)]'}>
-                      {cohort.members.toLocaleString()}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--cds-color-grey-600)] transition-colors hover:bg-[var(--cds-color-grey-50)] hover:text-[var(--cds-color-grey-975)]"
-              aria-label="Join a cohort"
-            >
-              <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-                add
-              </span>
-            </button>
-          </div>
-
-          <p className="max-w-3xl cds-body-tertiary text-[var(--cds-color-grey-600)]">
-            Rankings use total learning hours logged in the cohort you have selected, for the current leaderboard period. Top 3 lists
-            the highest-ranked learners; Around you lists peers close to your rank.
-          </p>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-5">
-              <p className="cds-body-tertiary mb-1.5 text-[var(--cds-color-grey-600)]">Top 3</p>
-              <div className="space-y-1">
-                {board.top3.map((p) => (
-                  <MiniLeaderboardRow key={p.rank} peer={p} isUser={p.rank === board.userRank} isMedal />
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] p-5">
-              <p className="cds-body-tertiary mb-1.5 text-[var(--cds-color-grey-600)]">Around you</p>
-              <div className="space-y-1">
-                {board.around.map((p) => (
-                  <MiniLeaderboardRow key={p.rank} peer={p} isUser={p.rank === board.userRank} isMedal={false} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-    </div>
-  );
-}
-
 export const Home: React.FC<HomeProps> = ({ 
     onResume, 
     currentSP, 
@@ -457,7 +374,6 @@ export const Home: React.FC<HomeProps> = ({
   const streakHoursCompletedToday = 0;
 
   const [selectedChip, setSelectedChip] = useState('chip1');
-  const [selectedCohort, setSelectedCohort] = useState<CohortId>('careerswitchers');
 
   // Intro video: muted by default, end state for "Continue watching"
   const [introVideoMuted, setIntroVideoMuted] = useState(true);
@@ -900,13 +816,7 @@ export const Home: React.FC<HomeProps> = ({
 
       {/* White Content Area */}
       <div className="max-w-[1440px] mx-auto px-6 py-10 space-y-12">
-
-        <HomeLeaderboard
-          selectedCohort={selectedCohort}
-          onSelectCohort={setSelectedCohort}
-        />
-
-        {/* Mini feed — below leaderboard; See all opens Community */}
+        {/* Mini feed — See all opens Community */}
         {onNavigateToFeed ? (
           <MiniFeed
             onOpenFeed={onNavigateToFeed}

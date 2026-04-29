@@ -2,6 +2,7 @@ import {
   PUBLISHED_ARTICLES_BY_COHORT,
   type PublishedArticleRecord,
 } from './publishedArticles.generated';
+import { pickPublicCatalogCreator } from './feedVideoCreators';
 
 /** Feed-only cohort model; presentation data for FeedPage (not tied to course XP). */
 
@@ -211,6 +212,13 @@ export interface FeedPlaceholderItem {
   title: string;
   subtitle: string;
   meta: string;
+  /** For `type === 'video'`, display name for a real catalog-style partner; Reels title line. */
+  clipCreatorName?: string;
+  /**
+   * Browse tags used when the clip was generated (e.g. feed category). Drives “creator + field”
+   * links on the clip header. Omitted for legacy saved items.
+   */
+  clipDisciplineSlugs?: string[];
   /** Coursera article URL when `type === 'article'` and sourced from published CSV. */
   articleUrl?: string;
   /** Anchor/RSS enclosure URL when `type === 'podcast'` (MP3/M4A). */
@@ -499,20 +507,34 @@ function itemFromTemplate(
   articleSeedKey: string
 ): FeedPlaceholderItem {
   switch (key) {
-    case 'v1':
+    case 'v1': {
+      const clipCreatorName = pickPublicCatalogCreator(
+        disciplineSlugs,
+        `${cohortId}:v1:${key}:${articleSeedKey}`
+      );
       return {
         type: 'video',
         title: `Course clip · ${theme}${disciplineTag}`,
-        subtitle: `Pooled from ${courseHint}—placeholder lesson highlight.${lens}`,
+        clipCreatorName,
+        clipDisciplineSlugs: disciplineSlugs.length ? [...disciplineSlugs] : undefined,
+        subtitle: `Pooled from ${clipCreatorName} on Coursera—placeholder lesson highlight.${lens}`,
         meta: 'Video · 4:12',
       };
-    case 'v2':
+    }
+    case 'v2': {
+      const clipCreatorName = pickPublicCatalogCreator(
+        disciplineSlugs,
+        `${cohortId}:v2:${key}:${articleSeedKey}`
+      );
       return {
         type: 'video',
         title: `Instructor tip · ${theme}${disciplineTag}`,
-        subtitle: `Short placeholder walkthrough tied to courses learners in this cohort take.${lens}`,
+        clipCreatorName,
+        clipDisciplineSlugs: disciplineSlugs.length ? [...disciplineSlugs] : undefined,
+        subtitle: `Short walkthrough from ${clipCreatorName} on Coursera—tied to courses in this space.${lens}`,
         meta: 'Video · 2:05',
       };
+    }
     case 'a1':
       return articlePlaceholderFromTemplateKey('a1', cohortId, disciplineSlugs, articleSeedKey, lens, disciplineTag);
     case 'a2':

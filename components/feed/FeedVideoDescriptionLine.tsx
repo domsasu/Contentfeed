@@ -13,12 +13,12 @@ export interface FeedVideoDescriptionLineProps {
 }
 
 /**
- * Renders a feed video title with “Course clip” / “Instructor tip” as an underlined link (rest stays plain text).
+ * Renders a feed video title with “Course clip” / “Instructor tip” as a link (rest stays plain text).
  * Used on Home mini-feed and full Feed tab.
  */
 export const FeedVideoDescriptionLine: React.FC<FeedVideoDescriptionLineProps> = ({
   item,
-  className = 'cds-body-secondary line-clamp-2 text-[var(--cds-color-grey-975)]',
+  className = 'cds-body-secondary line-clamp-2 pl-[5pt] text-[var(--cds-color-grey-975)]',
 }) => {
   const text = item.type === 'video' ? feedVideoTitleNeutral(item) : item.title;
   const segs = text.split(' · ').map((s) => s.trim());
@@ -33,7 +33,7 @@ export const FeedVideoDescriptionLine: React.FC<FeedVideoDescriptionLineProps> =
       {isLinkable ? (
         <a
           href={CLIP_TYPE_HREFS[first] ?? '#'}
-          className="text-[var(--cds-color-blue-700)] underline underline-offset-2 hover:text-[var(--cds-color-blue-800)]"
+          className="text-[var(--cds-color-blue-700)] hover:text-[var(--cds-color-blue-800)]"
           onClick={(e) => e.stopPropagation()}
         >
           {first}
