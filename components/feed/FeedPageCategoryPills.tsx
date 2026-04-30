@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bookmark, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import {
   Brackets,
   Briefcase,
@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { FEED_PAGE_CATEGORY_CHIPS } from '../../constants/feedPageCategories';
+import { Icons } from '../Icons';
 
 const ICON_BY_SLUG: Record<string, LucideIcon> = {
   'physical-science-and-engineering': FlaskConical,
@@ -35,15 +36,15 @@ export interface FeedPageCategoryPillsProps {
   /** `null` = all categories (no discipline filter). */
   selectedSlug: string | null;
   onSelect: (slug: string | null) => void;
-  /** Opens the dedicated Saved clips page. */
+  /** Opens the liked-videos library page. */
   onOpenSavedLibrary?: () => void;
-  /** Increment when user saves a clip; plays a short header bookmark motion. */
+  /** Increment when user likes a clip; plays a short header icon motion. */
   headerBookmarkSaveTick?: number;
-  /** Main title next to the bookmark (e.g. “Saved clips” on the library route). */
+  /** Main title next to the like icon (e.g. “Liked videos” on the library route). */
   pageTitle?: string;
-  /** When true, the bookmark is filled and the control reflects “on Saved clips”. */
+  /** When true, the like icon is filled and the control reflects “on Liked videos”. */
   savedPageActive?: boolean;
-  /** Renders a chevron back control to the left of the title (e.g. return to feed from Saved). */
+  /** Renders a chevron back control to the left of the title (e.g. return to feed from liked videos). */
   onBack?: () => void;
   /** When false, the category tab row is omitted (saved library only). */
   showCategoryTabs?: boolean;
@@ -97,13 +98,14 @@ export const FeedPageCategoryPills: React.FC<FeedPageCategoryPillsProps> = ({
             type="button"
             onClick={() => onOpenSavedLibrary?.()}
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border-0 bg-transparent text-[var(--cds-color-grey-800)] shadow-none transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-700)] focus-visible:ring-offset-2"
-            aria-label="Saved clips"
-            title="Saved clips"
+            aria-label="Liked videos"
+            title="Liked videos"
             aria-pressed={savedPageActive}
           >
-            <Bookmark
-              className={`h-5 w-5 ${savedPageActive ? 'fill-[var(--cds-color-grey-800)]' : ''} ${vibrate ? 'animate-bookmark-vibrate' : ''}`}
+            <Icons.Like
+              className={`h-5 w-5 shrink-0 ${savedPageActive ? 'fill-[var(--cds-color-grey-800)]' : 'fill-none'} ${vibrate ? 'animate-bookmark-vibrate' : ''}`}
               strokeWidth={2}
+              aria-hidden
             />
           </button>
         </div>

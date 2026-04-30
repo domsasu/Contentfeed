@@ -429,46 +429,49 @@ export const FeedMediaCard: React.FC<FeedMediaCardProps> = ({ item, feedPreviewV
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-5 border-t border-[var(--cds-color-grey-50)] pt-3">
-        <button
-          type="button"
-          className={`inline-flex items-center gap-1.5 cds-body-tertiary transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-500)] focus-visible:ring-offset-2 ${
-            cheered
-              ? 'text-[var(--cds-color-blue-700)]'
-              : 'text-[var(--cds-color-grey-600)] hover:text-[var(--cds-color-blue-700)]'
-          }`}
-          aria-label={`Cheer · ${formatEngagementCount(displayedCheer)}`}
-          aria-pressed={cheered}
-          onClick={() => {
-            setCheered((was) => {
-              if (was) return false;
-              setCheerBurstKey((k) => k + 1);
-              setCheerPopKey((k) => k + 1);
-              return true;
-            });
-          }}
-        >
-          <span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
-            {cheerBurstKey > 0 && (
-              <span key={cheerBurstKey} className="feed-like-ripple" />
-            )}
-            <Icons.Like
-              key={cheerPopKey}
-              className={`relative z-[1] h-4 w-4 ${cheerPopKey ? 'animate-feed-like-icon-pop' : ''}`}
-              strokeWidth={2}
-              fill={cheered ? 'currentColor' : 'none'}
-              aria-hidden
-            />
-          </span>
-          <span className="tabular-nums">{formatEngagementCount(displayedCheer)}</span>
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 cds-body-tertiary text-[var(--cds-color-grey-600)] hover:text-[var(--cds-color-blue-700)]"
-          aria-label={`Share · ${formatEngagementCount(share)}`}
-        >
-          <Icons.Share className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-          <span className="tabular-nums">{formatEngagementCount(share)}</span>
-        </button>
+        {type === 'video' ? (
+          <button
+            type="button"
+            className={`inline-flex items-center gap-1.5 cds-body-tertiary transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-500)] focus-visible:ring-offset-2 ${
+              cheered
+                ? 'text-[var(--cds-color-blue-700)]'
+                : 'text-[var(--cds-color-grey-600)] hover:text-[var(--cds-color-blue-700)]'
+            }`}
+            aria-label={`Like · ${formatEngagementCount(displayedCheer)}`}
+            aria-pressed={cheered}
+            onClick={() => {
+              setCheered((was) => {
+                if (was) return false;
+                setCheerBurstKey((k) => k + 1);
+                setCheerPopKey((k) => k + 1);
+                return true;
+              });
+            }}
+          >
+            <span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+              {cheerBurstKey > 0 && (
+                <span key={cheerBurstKey} className="feed-like-ripple" />
+              )}
+              <Icons.Like
+                key={cheerPopKey}
+                className={`relative z-[1] h-4 w-4 ${cheerPopKey ? 'animate-feed-like-icon-pop' : ''}`}
+                strokeWidth={2}
+                fill={cheered ? 'currentColor' : 'none'}
+                aria-hidden
+              />
+            </span>
+            <span className="tabular-nums">{formatEngagementCount(displayedCheer)}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 cds-body-tertiary text-[var(--cds-color-grey-600)] hover:text-[var(--cds-color-blue-700)]"
+            aria-label={`Share · ${formatEngagementCount(share)}`}
+          >
+            <Icons.Share className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+            <span className="tabular-nums">{formatEngagementCount(share)}</span>
+          </button>
+        )}
       </div>
     </article>
   );

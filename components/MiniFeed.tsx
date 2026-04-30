@@ -2,6 +2,7 @@
  * Mini feed — compact Home preview of community clips (first joined cohort), with a career-goal rail label.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   DEFAULT_FEED_DISCIPLINE_SLUGS,
   FEED_COHORT_META,
@@ -16,21 +17,38 @@ import {
 } from '../constants/feedPreviewVideos';
 import { isFeedElementFullyVisible } from './feed/feedViewport';
 import { FeedClipVideoPreview } from './feed/FeedClipVideoPreview';
+import { FeedTheaterImmersive } from './feed/FeedTheaterImmersive';
+import { exitIfFullscreen, type ImmersiveClip } from './feed/feedImmersiveShared';
+import { useFeedSavedClips } from './feed/feedSavedClips';
 import {
   MINI_FEED_CLIP_SRC_BY_VIDEO_INDEX,
   MINI_FEED_CLIP_VIDEO_SRC,
-  MINI_FEED_SEGMENT_MS,
   MINI_FEED_VIDEO_FRAME,
 } from './feed/feedMiniLayoutConstants';
 
 const PAGE_SIZE = 5;
 const MAX_MINI_FEED_ITEMS = 9;
 
+/** Clip URL for the n-th video in the mini-feed list (same mapping as full feed mosaic). */
+function getMiniFeedClipSrc(videoOrdinalAmongVideos: number, dataScienceClipLensActive: boolean): string {
+  const ds = dataScienceClipLensActive;
+  if (ds && videoOrdinalAmongVideos < FEED_DATA_SCIENCE_PREVIEW_VIDEOS.length) {
+    return FEED_DATA_SCIENCE_PREVIEW_VIDEOS[videoOrdinalAmongVideos]!;
+  }
+  return (
+    MINI_FEED_CLIP_SRC_BY_VIDEO_INDEX[
+      ds
+        ? videoOrdinalAmongVideos - FEED_DATA_SCIENCE_PREVIEW_VIDEOS.length
+        : videoOrdinalAmongVideos
+    ] ?? MINI_FEED_CLIP_VIDEO_SRC
+  );
+}
+
 export interface MiniFeedProps {
   /** Opens the full Feed view. */
   onOpenFeed: () => void;
   /**
-   * When the mini-feed section is fully on-screen and at least one preview video is cycling,
+   * When the mini-feed section is fully on-screen and the user is hovering a preview clip,
    * `true` so the parent can pause competing hero autoplay (e.g. Home intro video).
    */
   onMiniFeedClipPlayingChange?: (playing: boolean) => void;
@@ -43,6 +61,7 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
   onMiniFeedClipPlayingChange,
   careerGoalTitle,
 }) => {
+  const { isSaved, toggleSave, feedClipStableId } = useFeedSavedClips();
   const firstCohortId: FeedCohortId = JOINED_FEED_COHORT_IDS[0] ?? 'careerswitchers';
   const cohortMeta = FEED_COHORT_META[firstCohortId];
   const goalChipLabel = careerGoalTitle?.trim() || cohortMeta.pillLabel;
@@ -130,49 +149,93 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
     [allItems, safePage]
   );
 
-  const videoSlotIndices = useMemo(() => items.map((_, idx) => idx), [items]);
-
-  const [activeVideoSlotQi, setActiveVideoSlotQi] = useState(0);
-  const [segmentNonce, setSegmentNonce] = useState(0);
+  const [hoveredVideoIndex, setHoveredVideoIndex] = useState<number | null>(null);
   const [clipUnmuted, setClipUnmuted] = useState(false);
+
+  const [theaterList, setTheaterList] = useState<ImmersiveClip[] | null>(null);
+  const [theaterIndex, setTheaterIndex] = useState(0);
+  const theaterListRef = useRef<ImmersiveClip[] | null>(null);
+  useEffect(() => {
+    theaterListRef.current = theaterList;
+  }, [theaterList]);
+
+  const openTheaterAtGlobalIndex = useCallback(
+    (globalIndex: number) => {
+      if (allItems.length < 1) return;
+      const list: ImmersiveClip[] = allItems.map((it, ord) => ({
+        item: it,
+        clipSrc: getMiniFeedClipSrc(ord, dataScienceLensActive),
+      }));
+      setTheaterList(list);
+      setTheaterIndex(Math.min(Math.max(0, globalIndex), list.length - 1));
+    },
+    [allItems, dataScienceLensActive]
+  );
+
+  const closeTheater = useCallback(() => {
+    setTheaterList(null);
+    setTheaterIndex(0);
+    void exitIfFullscreen();
+  }, []);
+
+  const goTheaterPrev = useCallback(() => {
+    setTheaterIndex((idx) => (idx <= 0 ? 0 : idx - 1));
+  }, []);
+
+  const goTheaterNext = useCallback(() => {
+    setTheaterIndex((idx) => {
+      const L = theaterListRef.current;
+      if (!L?.length) return idx;
+      return Math.min(idx + 1, L.length - 1);
+    });
+  }, []);
 
   useEffect(() => {
     setPageIndex((p) => Math.min(p, Math.max(0, pageCount - 1)));
   }, [pageCount]);
 
   useEffect(() => {
-    setActiveVideoSlotQi(0);
-    setSegmentNonce(0);
+    setHoveredVideoIndex(null);
   }, [safePage, items]);
 
   useEffect(() => {
     if (!sectionFullyOnScreen) {
       setClipUnmuted(false);
+      setHoveredVideoIndex(null);
     }
   }, [sectionFullyOnScreen]);
 
-  useEffect(() => {
-    if (!sectionFullyOnScreen || videoSlotIndices.length === 0) return;
-    const id = window.setInterval(() => {
-      setSegmentNonce((n) => n + 1);
-      setActiveVideoSlotQi((q) => {
-        const len = videoSlotIndices.length;
-        if (len <= 1) return 0;
-        return (q + 1) % len;
-      });
-    }, MINI_FEED_SEGMENT_MS);
-    return () => window.clearInterval(id);
-  }, [sectionFullyOnScreen, videoSlotIndices, safePage, items]);
-
   const miniFeedPreviewVideosActive =
-    sectionFullyOnScreen && videoSlotIndices.length > 0;
+    sectionFullyOnScreen && hoveredVideoIndex !== null;
 
   useEffect(() => {
     onMiniFeedClipPlayingChange?.(miniFeedPreviewVideosActive);
   }, [miniFeedPreviewVideosActive, onMiniFeedClipPlayingChange]);
 
-  const activeVideoItemIndex =
-    videoSlotIndices.length > 0 ? videoSlotIndices[activeVideoSlotQi % videoSlotIndices.length]! : -1;
+  useEffect(() => {
+    if (theaterList === null) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [theaterList]);
+
+  const theaterLen = theaterList?.length ?? 0;
+  const safeTheaterIndex =
+    theaterLen > 0 ? Math.min(Math.max(0, theaterIndex), theaterLen - 1) : 0;
+  const theaterNode =
+    theaterList && theaterLen > 0 ? (
+      <FeedTheaterImmersive
+        clips={theaterList}
+        activeIndex={safeTheaterIndex}
+        onPrevClip={goTheaterPrev}
+        onNextClip={goTheaterNext}
+        canGoPrev={safeTheaterIndex > 0}
+        canGoNext={safeTheaterIndex < theaterLen - 1}
+        onClose={closeTheater}
+      />
+    ) : null;
 
   return (
     <section
@@ -184,6 +247,9 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
           : `Feed for ${cohortMeta.label}. Use See all to open the full feed.`
       }
     >
+      {typeof document !== 'undefined' && theaterNode
+        ? createPortal(theaterNode, document.body)
+        : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[11rem_minmax(0,1fr)] sm:grid-rows-[auto_auto] sm:items-stretch sm:gap-x-5 sm:gap-y-4">
         <div className="flex min-h-0 w-full min-w-0 flex-col items-stretch justify-start border-b border-[var(--cds-color-grey-100)] pb-4 text-left sm:row-start-1 sm:col-start-1 sm:h-full sm:border-b-0 sm:border-r sm:border-[var(--cds-color-grey-100)] sm:pb-0 sm:pr-5">
           <h2 className="cds-subtitle-lg mb-2 text-[var(--cds-color-grey-975)]">Your career feed</h2>
@@ -201,35 +267,43 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
             {items.map((item, i) => {
               const globalIndex = safePage * PAGE_SIZE + i;
               const rowKey = `mini-${globalIndex}-${item.type}-${item.title.slice(0, 32)}`;
-              const openRow = openCommunityFeed;
+              const openTheater = () => openTheaterAtGlobalIndex(globalIndex);
 
               const tileBase =
                 'flex h-full min-w-0 sm:flex-1 flex-col overflow-hidden rounded-[var(--cds-border-radius-200)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] text-left transition-colors hover:border-[var(--cds-color-grey-200)]';
 
-              const isActiveVideoSegment = i === activeVideoItemIndex;
-              const videoOrdinalAmongVideos = i;
-              const clipSrc =
-                dataScienceLensActive &&
-                videoOrdinalAmongVideos < FEED_DATA_SCIENCE_PREVIEW_VIDEOS.length
-                  ? FEED_DATA_SCIENCE_PREVIEW_VIDEOS[videoOrdinalAmongVideos]!
-                  : MINI_FEED_CLIP_SRC_BY_VIDEO_INDEX[
-                      dataScienceLensActive
-                        ? videoOrdinalAmongVideos - FEED_DATA_SCIENCE_PREVIEW_VIDEOS.length
-                        : videoOrdinalAmongVideos
-                    ] ?? MINI_FEED_CLIP_VIDEO_SRC;
+              const isActiveVideoSegment = hoveredVideoIndex === i;
+              const clipSrc = getMiniFeedClipSrc(globalIndex, dataScienceLensActive);
+
+              const clipId = feedClipStableId(item, clipSrc);
+              const saved = isSaved(clipId);
 
               const videoFrameClass = `${MINI_FEED_VIDEO_FRAME} group`;
 
               const videoMeta = (
-                <div className={videoFrameClass}>
+                <div
+                  className={videoFrameClass}
+                  onMouseEnter={() => {
+                    if (sectionFullyOnScreen) setHoveredVideoIndex(i);
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredVideoIndex((h) => (h === i ? null : h));
+                    setClipUnmuted(false);
+                  }}
+                >
                   <FeedClipVideoPreview
                     sectionActive={sectionFullyOnScreen}
                     isActiveSegment={isActiveVideoSegment}
-                    segmentNonce={segmentNonce}
+                    segmentNonce={0}
                     userUnmuted={clipUnmuted}
                     onToggleMute={() => setClipUnmuted((m) => !m)}
                     src={clipSrc}
                     reelInfoItem={item.type === 'video' ? item : undefined}
+                    saveControl={{
+                      saved,
+                      onToggle: () => toggleSave(item, clipSrc),
+                    }}
+                    onRequestImmersive={openTheater}
                   />
                 </div>
               );
@@ -240,11 +314,11 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
                   role="button"
                   tabIndex={0}
                   className={`${tileBase} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cds-color-blue-700)] focus-visible:ring-offset-2`}
-                  onClick={openRow}
+                  onClick={openTheater}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      openRow();
+                      openTheater();
                     }
                   }}
                 >

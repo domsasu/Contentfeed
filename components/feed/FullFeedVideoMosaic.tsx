@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { FEED_DATA_SCIENCE_PREVIEW_VIDEOS } from '../../constants/feedPreviewVideos';
 import type { FeedPlaceholderItem } from '../../constants/feedCohorts';
 import { FeedClipVideoPreview } from './FeedClipVideoPreview';
-import { FeedVideoClipReelInfo } from './FeedVideoClipReelInfo';
+import { FeedTheaterImmersive } from './FeedTheaterImmersive';
 import {
   FEED_MOSAIC_TILE_OUTER,
   FEED_MOSAIC_VIDEO_FRAME,
@@ -12,12 +11,7 @@ import {
   MINI_FEED_CLIP_VIDEO_SRC,
 } from './feedMiniLayoutConstants';
 import { isFeedElementFullyVisible } from './feedViewport';
-import {
-  exitIfFullscreen,
-  requestElFullscreen,
-  type ImmersiveClip,
-} from './feedImmersiveShared';
-import { Icons } from '../Icons';
+import { exitIfFullscreen, type ImmersiveClip } from './feedImmersiveShared';
 import type { SavedFeedClip } from './feedSavedClips';
 
 function getFeedClipSrc(videoOrdinalAmongVideos: number, dataScienceClipLensActive: boolean): string {
@@ -60,7 +54,7 @@ export type FullFeedVideoMosaicSavedProps = MosaicShared & {
 export type FullFeedVideoMosaicProps = FullFeedVideoMosaicFeedProps | FullFeedVideoMosaicSavedProps;
 
 /**
- * One row of video tiles; expanded mode uses a playlist in a fullscreen shell.
+ * One row of video tiles; expanded mode uses a theater viewport overlay with playlist.
  * Feed and Saved library share this implementation so tiles match exactly.
  */
 export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) => {
@@ -76,8 +70,6 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
   const savedClips = !isFeed ? props.savedClips : [];
   const ds = dataScienceClipLensActive;
   const sectionRef = useRef<HTMLElement | null>(null);
-  const immersiveShellRef = useRef<HTMLDivElement | null>(null);
-  const immersiveVideoRef = useRef<HTMLVideoElement | null>(null);
   const [sectionFullyOnScreen, setSectionFullyOnScreen] = useState(false);
   const [activePlayIndex, setActivePlayIndex] = useState<number | null>(null);
   const [clipUnmuted, setClipUnmuted] = useState(false);
@@ -85,8 +77,6 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
   const [immersiveList, setImmersiveList] = useState<ImmersiveClip[] | null>(null);
   const [immersiveIndex, setImmersiveIndex] = useState(0);
   const immersiveListRef = useRef<ImmersiveClip[] | null>(null);
-  const immersiveOpenRef = useRef(false);
-  const hadNativeFullscreenRef = useRef(false);
 
   useEffect(() => {
     immersiveListRef.current = immersiveList;
@@ -98,7 +88,6 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
       ? Math.min(Math.max(0, immersiveIndex), immersiveList!.length - 1)
       : 0;
   const immersiveItem = inImmersive ? immersiveList![safeImmersiveIndex]! : null;
-  const immersiveSrc = immersiveItem?.clipSrc ?? '';
   const playlistLen = immersiveList?.length ?? 0;
 
   useEffect(() => {
@@ -107,8 +96,6 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
   }, [activePlayIndex]);
 
   const closeImmersive = useCallback(() => {
-    hadNativeFullscreenRef.current = false;
-    immersiveOpenRef.current = false;
     setImmersiveList(null);
     setImmersiveIndex(0);
     void exitIfFullscreen();
@@ -125,62 +112,6 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
       return Math.min(idx + 1, L.length - 1);
     });
   }, []);
-
-  useLayoutEffect(() => {
-    if (immersiveList === null) {
-      immersiveOpenRef.current = false;
-      return;
-    }
-    const isFirstOpen = !immersiveOpenRef.current;
-    immersiveOpenRef.current = true;
-    if (!isFirstOpen) return;
-    const el = immersiveShellRef.current;
-    if (!el) return;
-    hadNativeFullscreenRef.current = false;
-    void requestElFullscreen(el)
-      .then(() => {
-        hadNativeFullscreenRef.current = true;
-      })
-      .catch(() => {
-        hadNativeFullscreenRef.current = false;
-      });
-  }, [immersiveList]);
-
-  useEffect(() => {
-    if (immersiveList === null) return;
-    const onFs = () => {
-      if (document.fullscreenElement === null && hadNativeFullscreenRef.current) {
-        hadNativeFullscreenRef.current = false;
-        immersiveOpenRef.current = false;
-        setImmersiveList(null);
-        setImmersiveIndex(0);
-      }
-    };
-    document.addEventListener('fullscreenchange', onFs);
-    return () => document.removeEventListener('fullscreenchange', onFs);
-  }, [immersiveList]);
-
-  useEffect(() => {
-    if (immersiveList === null) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeImmersive();
-        e.preventDefault();
-        return;
-      }
-      if (e.key === 'ArrowLeft') {
-        goImmersivePrev();
-        e.preventDefault();
-        return;
-      }
-      if (e.key === 'ArrowRight') {
-        goImmersiveNext();
-        e.preventDefault();
-      }
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [immersiveList, closeImmersive, goImmersivePrev, goImmersiveNext]);
 
   useEffect(() => {
     if (immersiveList === null) {
@@ -199,20 +130,6 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
     }
     setImmersiveIndex((i) => Math.min(i, Math.max(0, playlistLen - 1)));
   }, [playlistLen, immersiveList]);
-
-  useEffect(() => {
-    if (immersiveList === null) {
-      return;
-    }
-    const v = immersiveVideoRef.current;
-    if (!v) return;
-    v.currentTime = 0;
-    v.muted = false;
-    void v.play().catch(() => {
-      v.muted = true;
-      void v.play().catch(() => {});
-    });
-  }, [immersiveList, safeImmersiveIndex, immersiveSrc]);
 
   useEffect(() => {
     if (!sectionFullyOnScreen) {
@@ -279,79 +196,21 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
   );
 
   const immersiveNode =
-    immersiveItem && inImmersive ? (
-      <div
-        ref={immersiveShellRef}
-        className="fixed inset-0 z-[300] flex h-[100dvh] w-full flex-col bg-black/75 text-white"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Expanded video"
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-2 py-2 sm:px-3">
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-            aria-label="Share"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Icons.Share className="h-5 w-5" strokeWidth={2} aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={closeImmersive}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-            aria-label="Close"
-          >
-            <Icons.Close className="h-5 w-5" strokeWidth={2} />
-          </button>
-        </div>
-        <div className="flex min-h-0 min-w-0 flex-1 items-stretch justify-center gap-1 px-1 sm:gap-2 sm:px-3">
-          <button
-            type="button"
-            disabled={safeImmersiveIndex <= 0}
-            onClick={goImmersivePrev}
-            className="my-auto inline-flex h-12 w-10 shrink-0 items-center justify-center rounded-lg text-white/90 enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
-            aria-label="Previous video"
-          >
-            <ChevronLeft className="h-8 w-8" strokeWidth={1.5} />
-          </button>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center py-2">
-            <video
-              ref={immersiveVideoRef}
-              key={immersiveSrc}
-              className="max-h-[min(70dvh,100%)] w-full max-w-4xl object-contain"
-              src={immersiveSrc}
-              playsInline
-              controls
-              autoPlay
-            />
-          </div>
-          <button
-            type="button"
-            disabled={safeImmersiveIndex >= playlistLen - 1}
-            onClick={goImmersiveNext}
-            className="my-auto inline-flex h-12 w-10 shrink-0 items-center justify-center rounded-lg text-white/90 enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
-            aria-label="Next video"
-          >
-            <ChevronRight className="h-8 w-8" strokeWidth={1.5} />
-          </button>
-        </div>
-        <div className="shrink-0 border-t border-white/10 bg-black/30 px-4 py-3 sm:px-6 sm:py-4">
-          <div className="mx-auto max-w-4xl">
-            <p className="text-xs text-white/50 sm:text-sm">
-              {playlistLen > 0 ? `Clip ${safeImmersiveIndex + 1} of ${playlistLen}` : null}
-            </p>
-            <div className="mt-1 sm:mt-2">
-              <FeedVideoClipReelInfo item={immersiveItem.item} size="comfortable" />
-            </div>
-          </div>
-        </div>
-      </div>
+    immersiveItem && inImmersive && immersiveList ? (
+      <FeedTheaterImmersive
+        clips={immersiveList}
+        activeIndex={safeImmersiveIndex}
+        onPrevClip={goImmersivePrev}
+        onNextClip={goImmersiveNext}
+        canGoPrev={safeImmersiveIndex > 0}
+        canGoNext={safeImmersiveIndex < playlistLen - 1}
+        onClose={closeImmersive}
+      />
     ) : null;
 
   const sectionAria =
     props.mode === 'saved'
-      ? 'Saved video clips'
+      ? 'Liked videos'
       : 'Video clips for your learning goal';
 
   return (
@@ -371,7 +230,7 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
           {props.mode === 'saved' ? (
             savedClips.length === 0 ? (
               <p className="cds-body-secondary col-span-2 w-full min-w-0 text-[var(--cds-color-grey-600)] md:col-span-3 lg:col-span-5">
-                Nothing saved yet. Save clips from the feed to see them here.
+                No liked videos yet. Like videos on the feed to see them here.
               </p>
             ) : (
               savedClips.map((s, i) => {

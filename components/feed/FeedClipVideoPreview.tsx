@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Bookmark } from 'lucide-react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Icons } from '../Icons';
 import type { FeedPlaceholderItem } from '../../constants/feedCohorts';
 import { FeedVideoClipReelInfo } from './FeedVideoClipReelInfo';
@@ -15,11 +14,10 @@ export interface FeedClipVideoPreviewProps {
   src?: string;
   /** If true, timeupdate caps playback at the first `MINI_FEED_SEGMENT_SEC` (MiniFeed rotation). */
   capAtSegmentEnd?: boolean;
-  /** When set, clicking the main video area (not unmute/like/share) opens immersive full-screen in the parent. */
+  /** When set, clicking the main video area (not unmute/like) opens immersive full-screen in the parent. */
   onRequestImmersive?: () => void;
   /**
-   * Full-feed layout: **Save** (with **reelInfoItem**) with Like in a right rail; **Share** only in expanded fullscreen.
-   * Without reel info, Like + actions stay in a bottom-centered row.
+   * Like toggles persisted liked videos list. Omit on surfaces where that is unavailable.
    */
   saveControl?: { saved: boolean; onToggle: () => void };
   /** Renders a Reels-style info stack (avatar, name, caption) on a bottom gradient. */
@@ -42,7 +40,6 @@ export const FeedClipVideoPreview: React.FC<FeedClipVideoPreviewProps> = ({
   reelInfoItem,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -118,99 +115,49 @@ export const FeedClipVideoPreview: React.FC<FeedClipVideoPreviewProps> = ({
           </div>
         </div>
       ) : null}
-      {reelInfoItem ? (
+      {reelInfoItem && saveControl ? (
         <div className="pointer-events-none absolute bottom-32 right-1.5 z-[3] flex flex-col items-center gap-2.5 translate-y-[30pt] sm:bottom-36 sm:right-2 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-          {saveControl ? (
-            <button
-              type="button"
-              className={actionButtonClassName}
-              aria-pressed={saveControl.saved}
-              aria-label={saveControl.saved ? 'Remove from saved' : 'Save clip'}
-              onClick={(e) => {
-                e.stopPropagation();
-                saveControl.onToggle();
-              }}
-            >
-              <Bookmark
-                className={`h-5 w-5 ${saveControl.saved ? 'fill-white' : ''}`}
-                strokeWidth={2}
-                aria-hidden
-              />
-            </button>
-          ) : (
-            <button
-              type="button"
-              className={actionButtonClassName}
-              aria-label="Share"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Icons.Share className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
-            </button>
-          )}
           <button
             type="button"
             className={actionButtonClassName}
-            aria-pressed={isLiked}
-            aria-label="Like"
+            aria-pressed={saveControl.saved}
+            aria-label={
+              saveControl.saved ? 'Unlike and remove from liked videos' : 'Like video and add to liked videos'
+            }
             onClick={(e) => {
               e.stopPropagation();
-              setIsLiked((v) => !v);
+              saveControl.onToggle();
             }}
           >
             <Icons.Like
-              className={`h-5 w-5 shrink-0 ${isLiked ? 'fill-white' : 'fill-none'}`}
+              className={`h-5 w-5 shrink-0 ${saveControl.saved ? 'fill-white' : 'fill-none'}`}
               strokeWidth={2}
               aria-hidden
             />
           </button>
         </div>
-      ) : (
+      ) : !reelInfoItem && saveControl ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex justify-center gap-2.5 bg-gradient-to-t from-black/45 to-transparent px-2 pb-2.5 pt-8 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
           <button
             type="button"
             className={actionButtonClassName}
-            aria-pressed={isLiked}
-            aria-label="Like"
+            aria-pressed={saveControl.saved}
+            aria-label={
+              saveControl.saved ? 'Unlike and remove from liked videos' : 'Like video and add to liked videos'
+            }
             onClick={(e) => {
               e.stopPropagation();
-              setIsLiked((v) => !v);
+              saveControl.onToggle();
             }}
           >
             <Icons.Like
-              className={`h-5 w-5 shrink-0 ${isLiked ? 'fill-white' : 'fill-none'}`}
+              className={`h-5 w-5 shrink-0 ${saveControl.saved ? 'fill-white' : 'fill-none'}`}
               strokeWidth={2}
               aria-hidden
             />
           </button>
-          {saveControl ? (
-            <button
-              type="button"
-              className={actionButtonClassName}
-              aria-pressed={saveControl.saved}
-              aria-label={saveControl.saved ? 'Remove from saved' : 'Save clip'}
-              onClick={(e) => {
-                e.stopPropagation();
-                saveControl.onToggle();
-              }}
-            >
-              <Bookmark
-                className={`h-5 w-5 ${saveControl.saved ? 'fill-white' : ''}`}
-                strokeWidth={2}
-                aria-hidden
-              />
-            </button>
-          ) : (
-            <button
-              type="button"
-              className={actionButtonClassName}
-              aria-label="Share"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Icons.Share className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
-            </button>
-          )}
         </div>
-      )}
+      ) : null}
       <div className="pointer-events-none absolute right-0 top-0 z-[4] p-2 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
         <button
           type="button"

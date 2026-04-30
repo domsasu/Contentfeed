@@ -12,7 +12,7 @@ export interface FeedSavedPageProps {
 }
 
 /**
- * Saved library: back chevron + title + bookmark; no category row. Same mosaic as feed in saved mode.
+ * Liked videos library: back chevron + title + like icon; no category row. Same mosaic as feed in saved mode.
  */
 export const FeedSavedPage: React.FC<FeedSavedPageProps> = ({
   onBackToFeed,
@@ -43,7 +43,7 @@ export const FeedSavedPage: React.FC<FeedSavedPageProps> = ({
         <div className="relative z-10 mx-auto max-w-[1440px] px-4 md:px-6 pb-4 md:pb-5 pt-4 md:pt-5">
           <div id="feed-page-videos" data-site-surface="feed">
             <FeedPageCategoryPills
-              pageTitle="Saved clips"
+              pageTitle="Liked videos"
               savedPageActive
               selectedSlug={null}
               onSelect={() => {}}
