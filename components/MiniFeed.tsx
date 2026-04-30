@@ -224,6 +224,13 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
   const theaterLen = theaterList?.length ?? 0;
   const safeTheaterIndex =
     theaterLen > 0 ? Math.min(Math.max(0, theaterIndex), theaterLen - 1) : 0;
+  const theaterClip = theaterList && theaterLen > 0 ? theaterList[safeTheaterIndex]! : null;
+  const theaterSaveControl = theaterClip
+    ? {
+        saved: isSaved(feedClipStableId(theaterClip.item, theaterClip.clipSrc)),
+        onToggle: () => toggleSave(theaterClip.item, theaterClip.clipSrc),
+      }
+    : undefined;
   const theaterNode =
     theaterList && theaterLen > 0 ? (
       <FeedTheaterImmersive
@@ -234,6 +241,7 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
         canGoPrev={safeTheaterIndex > 0}
         canGoNext={safeTheaterIndex < theaterLen - 1}
         onClose={closeTheater}
+        saveControl={theaterSaveControl}
       />
     ) : null;
 
@@ -243,8 +251,8 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
       className="rounded-[var(--cds-border-radius-200)] bg-[var(--cds-color-white)] p-4 sm:p-5 text-left"
       aria-label={
         careerGoalTitle
-          ? `Clips for your ${careerGoalTitle} goal in ${cohortMeta.label}. Use See all to open the full feed.`
-          : `Feed for ${cohortMeta.label}. Use See all to open the full feed.`
+          ? `Video feed — clips for your ${careerGoalTitle} goal in ${cohortMeta.label}. Use See all to open the full feed.`
+          : `Video feed for ${cohortMeta.label}. Use See all to open the full feed.`
       }
     >
       {typeof document !== 'undefined' && theaterNode
@@ -252,7 +260,7 @@ export const MiniFeed: React.FC<MiniFeedProps> = ({
         : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[11rem_minmax(0,1fr)] sm:grid-rows-[auto_auto] sm:items-stretch sm:gap-x-5 sm:gap-y-4">
         <div className="flex min-h-0 w-full min-w-0 flex-col items-stretch justify-start border-b border-[var(--cds-color-grey-100)] pb-4 text-left sm:row-start-1 sm:col-start-1 sm:h-full sm:border-b-0 sm:border-r sm:border-[var(--cds-color-grey-100)] sm:pb-0 sm:pr-5">
-          <h2 className="cds-subtitle-lg mb-2 text-[var(--cds-color-grey-975)]">Your career feed</h2>
+          <h2 className="cds-subtitle-lg mb-2 text-[var(--cds-color-grey-975)]">Video Feed</h2>
           <div className="mb-4 flex flex-wrap gap-1">
             <span
               className="cds-body-secondary inline-flex h-8 max-w-full min-w-0 items-center truncate rounded-[var(--cds-border-radius-400)] border border-[var(--cds-color-grey-100)] bg-[var(--cds-color-white)] px-3 py-1 text-[var(--cds-color-grey-975)]"

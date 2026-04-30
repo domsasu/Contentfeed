@@ -1,0 +1,8 @@
+{
+  "segments": [
+    { "id": "home", "label": "Home" },
+    { "id": "feed", "label": "Community feed" },
+    { "id": "learning", "label": "Learning" },
+    { "id": "liked", "label": "Liked videos" }
+  ]
+}

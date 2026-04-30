@@ -195,6 +195,14 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
     [props.mode, savedClips, allVideoItems, ds]
   );
 
+  const immersiveSaveControl =
+    immersiveItem && inImmersive
+      ? {
+          saved: isClipSaved(feedClipStableId(immersiveItem.item, immersiveItem.clipSrc)),
+          onToggle: () => onToggleSave(immersiveItem.item, immersiveItem.clipSrc),
+        }
+      : undefined;
+
   const immersiveNode =
     immersiveItem && inImmersive && immersiveList ? (
       <FeedTheaterImmersive
@@ -205,6 +213,7 @@ export const FullFeedVideoMosaic: React.FC<FullFeedVideoMosaicProps> = (props) =
         canGoPrev={safeImmersiveIndex > 0}
         canGoNext={safeImmersiveIndex < playlistLen - 1}
         onClose={closeImmersive}
+        saveControl={immersiveSaveControl}
       />
     ) : null;
 

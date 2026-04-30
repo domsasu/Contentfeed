@@ -1,0 +1,23 @@
+{
+  "commits": [
+    {
+      "sha": "6f7386602f53472c937e029be7c23ef20aba26c4",
+      "shortSha": "6f73866",
+      "title": "Feed: theater immersive, like-to-save, mini-feed hover and theater",
+      "date": "2026-04-30",
+      "files": [
+        "components/MiniFeed.tsx",
+        "components/feed/FeedTheaterImmersive.tsx",
+        "components/feed/FullFeedVideoMosaic.tsx",
+        "components/feed/FeedClipVideoPreview.tsx"
+      ]
+    },
+    {
+      "sha": "0000000000000000000000000000000000000000",
+      "shortSha": "0000000",
+      "title": "Example commit (replace via npm run changelog:export)",
+      "date": "2026-01-01",
+      "files": ["README.md"]
+    }
+  ]
+}

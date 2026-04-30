@@ -56,6 +56,8 @@ export interface FeedTheaterImmersiveProps {
   canGoPrev: boolean;
   canGoNext: boolean;
   onClose: () => void;
+  /** When set, a Like control is shown in the transport bar (same persistence as feed tiles). */
+  saveControl?: { saved: boolean; onToggle: () => void };
 }
 
 /**
@@ -71,6 +73,7 @@ export const FeedTheaterImmersive: React.FC<FeedTheaterImmersiveProps> = ({
   canGoPrev,
   canGoNext,
   onClose,
+  saveControl,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const minimizeRef = useRef<HTMLButtonElement>(null);
@@ -455,9 +458,25 @@ export const FeedTheaterImmersive: React.FC<FeedTheaterImmersiveProps> = ({
               <span className="shrink-0 font-mono text-xs tabular-nums text-white/80 sm:text-sm">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
-              <span className="ml-auto shrink-0 text-[10px] text-white/45 sm:text-xs">
-                Clip {activeIndex + 1} of {clips.length}
-              </span>
+              {saveControl ? (
+                <button
+                  type="button"
+                  onClick={saveControl.onToggle}
+                  className="ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                  aria-pressed={saveControl.saved}
+                  aria-label={
+                    saveControl.saved
+                      ? 'Unlike and remove from liked videos'
+                      : 'Like video and add to liked videos'
+                  }
+                >
+                  <Icons.Like
+                    className={`h-4 w-4 shrink-0 ${saveControl.saved ? 'fill-white' : 'fill-none'}`}
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
