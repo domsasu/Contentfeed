@@ -22,6 +22,8 @@ export interface FeedClipVideoPreviewProps {
   saveControl?: { saved: boolean; onToggle: () => void };
   /** Renders a Reels-style info stack (avatar, name, caption) on a bottom gradient. */
   reelInfoItem?: FeedPlaceholderItem;
+  /** When false with `reelInfoItem`, avatar + title only (no caption). Home MiniFeed; Feed tab keeps full copy. */
+  reelInfoShowCaption?: boolean;
 }
 
 /**
@@ -38,6 +40,7 @@ export const FeedClipVideoPreview: React.FC<FeedClipVideoPreviewProps> = ({
   onRequestImmersive,
   saveControl,
   reelInfoItem,
+  reelInfoShowCaption = true,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -110,7 +113,11 @@ export const FeedClipVideoPreview: React.FC<FeedClipVideoPreviewProps> = ({
               copy uses full width up to the rail (mini feed + main feed).
             */}
             <div className="w-full min-w-0 pl-2.5 pr-[calc(0.375rem+2.5rem+0.25rem)] sm:pl-3 sm:pr-[calc(0.5rem+2.5rem+0.25rem)]">
-              <FeedVideoClipReelInfo item={reelInfoItem} size="compact" />
+              <FeedVideoClipReelInfo
+                item={reelInfoItem}
+                size="compact"
+                showCaption={reelInfoShowCaption}
+              />
             </div>
           </div>
         </div>

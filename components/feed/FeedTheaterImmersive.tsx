@@ -17,7 +17,6 @@ function formatTime(sec: number): string {
 function FeedTheaterDetailPanel({ item }: { item: FeedPlaceholderItem }) {
   const m = item.type === 'video' ? getFeedVideoClipReelModel(item) : null;
   const header = m?.entityName ?? item.title;
-  const captionHint = m?.caption;
   const mark = m?.avatarChar ?? 'C';
 
   return (
@@ -37,12 +36,6 @@ function FeedTheaterDetailPanel({ item }: { item: FeedPlaceholderItem }) {
       <h2 className="text-lg font-bold leading-snug text-white md:text-xl">{header}</h2>
       {item.subtitle ? (
         <p className="mt-2 text-sm leading-relaxed text-white/75">{item.subtitle}</p>
-      ) : null}
-      {item.meta ? (
-        <p className="mt-2 text-xs text-white/45">{item.meta}</p>
-      ) : null}
-      {captionHint && captionHint !== item.subtitle ? (
-        <p className="mt-4 text-sm leading-relaxed text-white/60">{captionHint}</p>
       ) : null}
     </div>
   );

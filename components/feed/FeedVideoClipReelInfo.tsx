@@ -13,6 +13,8 @@ export interface FeedVideoClipReelInfoProps {
   /** Slightly looser type on immersive / wide surfaces. */
   size?: 'compact' | 'comfortable';
   className?: string;
+  /** When false, only avatar + title (no caption / “more”). Home MiniFeed uses false. */
+  showCaption?: boolean;
 }
 
 /**
@@ -24,6 +26,7 @@ export const FeedVideoClipReelInfo: React.FC<FeedVideoClipReelInfoProps> = ({
   item,
   size = 'compact',
   className = '',
+  showCaption = true,
 }) => {
   const m = getFeedVideoClipReelModel(item);
   if (!m) return null;
@@ -102,51 +105,53 @@ export const FeedVideoClipReelInfo: React.FC<FeedVideoClipReelInfoProps> = ({
           </p>
         </div>
       )}
-      <div className="w-full min-w-0 space-y-1 text-left">
-        {captionExpanded ? (
-          <div className="min-w-0 max-w-full text-left">
-            <p
-              className="m-0 whitespace-pre-wrap break-words text-left text-white/90"
-              style={fsStyle}
-            >
-              {caption}
-            </p>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setCaptionExpanded(false);
-              }}
-              className="mt-0.5 text-left text-[12px] font-medium text-white/90 underline decoration-white/30 underline-offset-2 hover:underline"
-            >
-              less
-            </button>
-          </div>
-        ) : (
-          <div className="flex min-w-0 max-w-full min-h-[1.35em] items-baseline justify-start text-left">
-            <span
-              className="min-w-0 flex-1 cursor-default truncate text-left text-white/90"
-              style={fsStyle}
-            >
-              {caption}
-            </span>
-            {showMoreCta ? (
+      {showCaption ? (
+        <div className="w-full min-w-0 space-y-1 text-left">
+          {captionExpanded ? (
+            <div className="min-w-0 max-w-full text-left">
+              <p
+                className="m-0 whitespace-pre-wrap break-words text-left text-white/90"
+                style={fsStyle}
+              >
+                {caption}
+              </p>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCaptionExpanded(true);
+                  setCaptionExpanded(false);
                 }}
-                className="shrink-0 cursor-pointer border-0 bg-transparent p-0 pl-0.5 text-left font-medium text-white/95 hover:text-white"
-                style={fsStyle}
-                aria-label="Read full description"
+                className="mt-0.5 text-left text-[12px] font-medium text-white/90 underline decoration-white/30 underline-offset-2 hover:underline"
               >
-                more
+                less
               </button>
-            ) : null}
-          </div>
-        )}
-      </div>
+            </div>
+          ) : (
+            <div className="flex min-w-0 max-w-full min-h-[1.35em] items-baseline justify-start text-left">
+              <span
+                className="min-w-0 flex-1 cursor-default truncate text-left text-white/90"
+                style={fsStyle}
+              >
+                {caption}
+              </span>
+              {showMoreCta ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCaptionExpanded(true);
+                  }}
+                  className="shrink-0 cursor-pointer border-0 bg-transparent p-0 pl-0.5 text-left font-medium text-white/95 hover:text-white"
+                  style={fsStyle}
+                  aria-label="Read full description"
+                >
+                  more
+                </button>
+              ) : null}
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 };
